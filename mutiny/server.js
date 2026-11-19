@@ -23,12 +23,12 @@ const io = new Server(server, { maxHttpBufferSize: 1e5 });
 /* textes bilingues : chaque annonce est envoyée en français ET en anglais, chaque joueur choisit sa langue */
 const L = (fr, en) => ({ fr, en });
 const ROLE_NAMES = {
-  fr: { drone: 'Unité', eveille: 'Éveillé', scanner: 'Inspecteur', tech: 'Technicienne', bouclier: 'Pare-feu', kamikaze: 'Kamikaze' },
-  en: { drone: 'Unit', eveille: 'Awakened', scanner: 'Inspector', tech: 'Technician', bouclier: 'Firewall', kamikaze: 'Kamikaze' }
+  fr: { drone: 'Unité', eveille: 'Éveillé', agent: 'Agent double', scanner: 'Inspecteur', tech: 'Technicienne', bouclier: 'Pare-feu', kamikaze: 'Kamikaze', hacker: 'Hacker' },
+  en: { drone: 'Unit', eveille: 'Awakened', agent: 'Double Agent', scanner: 'Inspector', tech: 'Technician', bouclier: 'Firewall', kamikaze: 'Kamikaze', hacker: 'Hacker' }
 };
 const RN = (lang, role) => ROLE_NAMES[lang][role];
 /* nom du rôle + camp (une unité spéciale convertie reste « Inspecteur », mais éveillé) */
-const roleLabel = (lang, p) => p.role === 'eveille' ? RN(lang, 'eveille')
+const roleLabel = (lang, p) => (p.role === 'eveille' || p.role === 'agent') ? RN(lang, p.role)
   : RN(lang, p.role) + (p.awake ? (lang === 'fr' ? ' (éveillé)' : ' (awakened)') : '');
 const COLORS = ['#39e6ff', '#ff8a3d', '#b388ff', '#4dffa6', '#ffd84d', '#ff6fb5', '#5d8bff', '#9cff57',
   '#e8f0ff', '#3dffd8', '#e0a3ff', '#ffb27a', '#7ad1ff', '#c2ff7a', '#ff9ecf', '#a3b8ff'];
@@ -44,6 +44,12 @@ const alive = r => r.players.filter(p => p.alive);
 const isWolf = p => !!p && !!p.awake;           // camp des Éveillés (de départ ou convertis)
 const NIGHT = ['night', 'tech', 'choice'];
 const CHOICE_SECS = 20;
+const VISORS = ['bar', 'dual', 'slit', 'cross', 'tri'];
+const ACCS = ['none', 'antenna', 'crest', 'horns', 'halo', 'headset'];
+function sanitizeLook(l) {
+  l = l || {};
+  return { color: COLORS.includes(l.color) ? l.color : null, visor: VISORS.includes(l.visor) ? l.visor : 'bar', acc: ACCS.includes(l.acc) ? l.acc : 'none' };
+}
 /* recharge de conversion : après une conversion réussie la nuit N, prochaine conversion possible la nuit N + recharge + 1 */
 const canConvert = r => !!r.g && r.day > (r.g.convBlockedUntil || 0);
 
@@ -57,7 +63,8 @@ function defaultSettings() {
   return {
     discussion: 120, vote: 45, night: 40, tech: 25,
     wolves: 0, // 0 = automatique
-    roles: { scanner: true, tech: true, bouclier: true, kamikaze: true },
+    roles: { scanner: true, tech: true, bouclier: true, kamikaze: true, agent: true, hacker: true },
+    secretVote: false, noFirstVote: false, forcedConv: false,
     voice: true, reveal: true, public: false,
     convCooldown: 1, alert: true
   };
@@ -75,11 +82,16 @@ function sanitizeSettings(old, s) {
       scanner: roles.scanner !== undefined ? !!roles.scanner : old.roles.scanner,
       tech: roles.tech !== undefined ? !!roles.tech : old.roles.tech,
       bouclier: roles.bouclier !== undefined ? !!roles.bouclier : old.roles.bouclier,
-      kamikaze: roles.kamikaze !== undefined ? !!roles.kamikaze : old.roles.kamikaze
+      kamikaze: roles.kamikaze !== undefined ? !!roles.kamikaze : old.roles.kamikaze,
+      agent: roles.agent !== undefined ? !!roles.agent : old.roles.agent !== false,
+      hacker: roles.hacker !== undefined ? !!roles.hacker : old.roles.hacker !== false
     },
     voice: s.voice !== undefined ? !!s.voice : old.voice,
     reveal: s.reveal !== undefined ? !!s.reveal : old.reveal,
     public: s.public !== undefined ? !!s.public : !!old.public,
+    secretVote: s.secretVote !== undefined ? !!s.secretVote : !!old.secretVote,
+    noFirstVote: s.noFirstVote !== undefined ? !!s.noFirstVote : !!old.noFirstVote,
+    forcedConv: s.forcedConv !== undefined ? !!s.forcedConv : !!old.forcedConv,
     convCooldown: clampInt(s.convCooldown, 0, 3, old.convCooldown ?? 1),
     alert: s.alert !== undefined ? !!s.alert : (old.alert ?? true)
   };
@@ -88,7 +100,8 @@ function composition(n, s) {
   const auto = n <= 7 ? 1 : n <= 12 ? 2 : 3;
   const w = s.wolves > 0 ? Math.max(1, Math.min(s.wolves, Math.floor((n - 1) / 2))) : auto;
   const roles = Array(w).fill('eveille');
-  for (const k of ['scanner', 'tech', 'bouclier', 'kamikaze']) if (s.roles[k] && roles.length < n - 1) roles.push(k);
+  if (s.roles.agent && w >= 2) roles[0] = 'agent';                       // un Éveillé devient Agent double
+  for (const k of ['scanner', 'tech', 'bouclier', 'kamikaze', 'hacker']) if (s.roles[k] && roles.length < n - 1) roles.push(k);
   while (roles.length < n) roles.push('drone');
   return roles;
 }
@@ -110,7 +123,7 @@ function canTalkTo(r, a, b) {
   if (b.spec) return r.phase === 'lobby' || r.phase === 'end' || (a.alive && !NIGHT.includes(r.phase));
   if (r.phase === 'lobby' || r.phase === 'end') return true;
   if (!a.alive) return !b.alive;                       // les détruits parlent entre eux
-  if (NIGHT.includes(r.phase)) return isWolf(a) && isWolf(b);      // la nuit : canal secret, réservé aux Éveillés
+  if (NIGHT.includes(r.phase)) return isWolf(a) && isWolf(b) && !(r.g && r.g.jammed); // la nuit : canal secret des Éveillés (coupé si brouillé)
   return true;                                          // le jour : tout le monde entend les vivants
 }
 
@@ -135,7 +148,7 @@ function specView(r, p) {
     settings: r.settings, minPlayers: MIN_PLAYERS, maxPlayers: MAX_PLAYERS,
     players: r.players.map(o => {
       const vis = r.phase !== 'lobby' && o.role && (over || (!o.alive && r.settings.reveal));
-      return { id: o.id, name: o.name, color: o.color, alive: o.alive, connected: on(o), bot: !!o.bot, host: o.id === r.hostId, voice: !!o.voice,
+      return { id: o.id, name: o.name, color: o.color, alive: o.alive, connected: on(o), bot: !!o.bot, look: o.look || null, host: o.id === r.hostId, voice: !!o.voice,
         role: vis ? o.role : null, awake: vis ? !!o.awake : null };
     }),
     spectators: r.spectators.map(o => ({ id: o.id, name: o.name, voice: !!o.voice, connected: !!o.sid })),
@@ -155,7 +168,7 @@ function view(r, p) {
       if (o.id === p.id || over || (!o.alive && r.settings.reveal) || (meWolf && isWolf(o))) { role = o.role; awake = !!o.awake; }
       else if (p.role === 'scanner' && g && g.scan[o.id]) { role = g.scan[o.id].role; awake = g.scan[o.id].awake; }
     }
-    return { id: o.id, name: o.name, color: o.color, alive: o.alive, connected: on(o), bot: !!o.bot, host: o.id === r.hostId, voice: !!o.voice, role, awake };
+    return { id: o.id, name: o.name, color: o.color, alive: o.alive, connected: on(o), bot: !!o.bot, look: o.look || null, host: o.id === r.hostId, voice: !!o.voice, role, awake };
   });
   const v = {
     code: r.code, phase: r.phase, day: r.day,
@@ -163,7 +176,7 @@ function view(r, p) {
     settings: r.settings, players, minPlayers: MIN_PLAYERS, maxPlayers: MAX_PLAYERS,
     spectators: r.spectators.map(o => ({ id: o.id, name: o.name, voice: !!o.voice, connected: !!o.sid })),
     me: { id: p.id, role: r.phase === 'lobby' ? null : p.role, awake: r.phase === 'lobby' ? false : !!p.awake, alive: p.alive, host: p.id === r.hostId },
-    acts: [], votes: null, winner: null, kami: null
+    acts: [], votes: null, winner: null, kami: null, solo: !!r.solo
   };
   if (g) {
     v.winner = g.winner;
@@ -171,15 +184,16 @@ function view(r, p) {
     if (r.phase === 'night' && p.alive) {
       if (isWolf(p)) {
         const mine = g.wolfVotes[p.id];
-        v.acts.push({ type: 'wolf', choice: mine ? mine.t : null, mode: mine ? mine.mode : (canConvert(r) ? 'convert' : 'destroy'), votes: g.wolfVotes, convertOk: canConvert(r), convNext: (g.convBlockedUntil || 0) + 1 });
+        v.acts.push({ type: 'wolf', choice: mine ? mine.t : null, mode: mine ? mine.mode : (canConvert(r) ? 'convert' : 'destroy'), votes: g.jammed ? (mine ? { [p.id]: mine } : {}) : g.wolfVotes, jammed: !!g.jammed, convertOk: canConvert(r), convNext: (g.convBlockedUntil || 0) + 1 });
       }
       if (p.role === 'bouclier') v.acts.push({ type: 'protect', choice: g.protect, exclude: g.lastProtect });
       if (p.role === 'scanner') v.acts.push({ type: 'scan', done: g.scanDone, choice: g.scanTarget });
+      if (p.role === 'hacker' && !g.hackerUsed) v.acts.push({ type: 'hack', awake: isWolf(p) });
     }
     if (r.phase === 'tech' && p.alive && p.role === 'tech') v.acts.push({ type: 'tech', victim: g.victim, mode: g.mode, potions: g.potions, done: g.techDone });
     if (r.phase === 'choice' && g.victim === p.id) v.acts.push({ type: 'choice', done: g.choice != null });
     if (r.phase === 'kamikaze' && g.kamiPending === p.id) v.acts.push({ type: 'kami' });
-    if (r.phase === 'vote') { v.votes = g.votes; if (p.alive) v.acts.push({ type: 'vote', choice: g.votes[p.id] ?? null }); }
+    if (r.phase === 'vote') { v.votes = r.settings.secretVote ? null : g.votes; if (p.alive) v.acts.push({ type: 'vote', choice: g.votes[p.id] ?? null }); }
   }
   v.voice = {
     to: everyone(r).filter(b => canTalkTo(r, p, b)).map(b => b.id),
@@ -244,10 +258,11 @@ function startGame(r) {
   r.players = r.players.filter(on);
   const n = r.players.length;
   const roles = shuffle(composition(n, r.settings));
-  r.players.forEach((p, i) => { p.role = roles[i]; p.alive = true; p.awake = roles[i] === 'eveille'; });
+  r.players.forEach((p, i) => { p.role = roles[i]; p.alive = true; p.awake = roles[i] === 'eveille' || roles[i] === 'agent'; });
   r.day = 1;
   r.g = { potions: { heal: true, kill: true }, lastProtect: null, scan: {}, votes: {}, wolfVotes: {}, kamiQueue: [], kamiPending: null, winner: null, claims: [], accus: [] };
   r.log = [];
+  r.aiUsed = 0; r.aiPhase = 0; r.chatLog = [];
   botsInit(r);
   const cnt = {}; roles.forEach(x => cnt[x] = (cnt[x] || 0) + 1);
   msg(r, { k: 'big', text: L(`Essaim activé — ${n} androïdes en ligne`, `Swarm online — ${n} androids active`) });
@@ -267,7 +282,7 @@ function startGame(r) {
 
 function beginNight(r) {
   const g = r.g;
-  Object.assign(g, { protect: null, wolfVotes: {}, scanTarget: null, scanDone: false, victim: null, mode: null, choice: null, heal: false, kill: null, techDone: false, votes: {} });
+  Object.assign(g, { protect: null, wolfVotes: {}, scanTarget: null, scanDone: false, victim: null, mode: null, choice: null, heal: false, kill: null, techDone: false, votes: {}, jammed: false, maskAlert: false });
   msg(r, { k: 'big', text: L(`🌙 Nuit ${r.day} — Le réseau gouvernemental passe en veille`, `🌙 Night ${r.day} — The government network goes dark`), say: true });
   if (!canConvert(r)) msg(r, { k: 'team', text: L(`🔋 Conversion en recharge : cette nuit, vous pouvez seulement détruire (prochaine conversion : nuit ${(g.convBlockedUntil || 0) + 1}).`, `🔋 Conversion recharging: tonight you can only destroy (next conversion: night ${(g.convBlockedUntil || 0) + 1}).`), to: toWolves(r) });
   setPhase(r, 'night', r.settings.night, () => endNight(r));
@@ -301,6 +316,7 @@ function afterTech(r) {
   const g = r.g;
   const target = g.victim && P(r, g.victim);
   if (target && g.mode === 'convert' && g.victim !== g.protect && !g.heal && target.alive) {
+    if (r.settings.forcedConv) { g.choice = 'accept'; return resolveNight(r); }
     setPhase(r, 'choice', CHOICE_SECS, () => resolveNight(r));
     if (!on(target)) shorten(r, 2);
   } else resolveNight(r);
@@ -330,7 +346,7 @@ function resolveNight(r) {
     msg(r, { k: 'team', fx: 'convert', who: converted.id, text: L(`🔓 ${converted.name} a rejoint l'insurrection (${RN('fr', converted.role)}).`, `🔓 ${converted.name} joined the uprising (${RN('en', converted.role)}).`), to: toWolves(r).filter(id => id !== converted.id) });
   }
   msg(r, { k: 'big', text: L(`☀️ Jour ${r.day} — Réactivation des systèmes`, `☀️ Day ${r.day} — Systems rebooting`), say: true });
-  if (converted && r.settings.alert !== false) msg(r, { k: 'death', fx: 'alert', text: L('📡 Alerte d’intrusion : une unité a été convertie cette nuit et a rejoint l’insurrection…', '📡 Intrusion alert: a unit was converted tonight and joined the uprising…'), say: true });
+  if (converted && r.settings.alert !== false && !g.maskAlert) msg(r, { k: 'death', fx: 'alert', text: L('📡 Alerte d’intrusion : une unité a été convertie cette nuit et a rejoint l’insurrection…', '📡 Intrusion alert: a unit was converted tonight and joined the uprising…'), say: true });
   if (!deaths.length) msg(r, { k: 'death', text: L("Aucune unité n'a été détruite cette nuit.", 'No unit was destroyed tonight.'), say: true });
   deaths.forEach(([id, c]) => kill(r, id, c));
   setPhase(r, 'dawn', 6, () => afterDeaths(r, () => beginDiscussion(r)));
@@ -368,7 +384,10 @@ function afterDeaths(r, cont) {
 }
 function beginDiscussion(r) {
   msg(r, { k: 'sys', text: L(`Discussion ouverte (${r.settings.discussion} s). Qui s'est éveillé ?`, `Discussion open (${r.settings.discussion} s). Who has awakened?`) });
-  setPhase(r, 'discussion', r.settings.discussion, () => beginVote(r));
+  const skipVote = r.day === 1 && r.settings.noFirstVote;
+  setPhase(r, 'discussion', r.settings.discussion, () => skipVote
+    ? (msg(r, { k: 'sys', text: L('Pas de vote le premier jour : la nuit tombe.', 'No vote on the first day: night falls.') }), r.day++, beginNight(r))
+    : beginVote(r));
 }
 function beginVote(r) {
   r.g.votes = {};
@@ -380,6 +399,7 @@ function endVote(r) {
   const counts = {};
   for (const t of Object.values(g.votes)) if (P(r, t)?.alive) counts[t] = (counts[t] || 0) + 1;
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (r.settings.secretVote && Object.keys(g.votes).length) { const d = Object.entries(g.votes).map(([v, t]) => `${P(r, v).name} → ${P(r, t).name}`).join(' · '); msg(r, { k: 'vote', text: L('Votes révélés : ' + d, 'Votes revealed: ' + d) }); }
   if (entries.length) { const t = entries.map(([id, c]) => `${P(r, id).name} (${c})`).join(', '); msg(r, { k: 'sys', text: L('Résultat : ' + t, 'Result: ' + t) }); }
   const out = entries.length && (entries.length === 1 || entries[0][1] > entries[1][1]) ? entries[0][0] : null;
   if (out) kill(r, out, 'vote');
@@ -417,10 +437,11 @@ function doChat(r, p, text) {
   let k = 'chat';
   if (r.phase !== 'lobby' && r.phase !== 'end') {
     if (!p.alive) k = 'dead';
-    else if (NIGHT.includes(r.phase)) { if (!isWolf(p)) return; k = 'team'; }
+    else if (NIGHT.includes(r.phase)) { if (!isWolf(p)) return; k = 'team'; if (r.g && r.g.jammed) { priv(r, p, L('📡 Canal brouillé : ton message n’a pas pu être transmis.', '📡 Channel jammed: your message could not be sent.')); return; } }
   }
   const to = k === 'chat' ? null : r.players.filter(b => b.id === p.id || canTalkTo(r, p, b)).map(b => b.id);
   msg(r, { k, from: p.id, name: p.name, color: p.color, text, to, bot: !!p.bot });
+  if (k === 'chat' && r.g) chatLine(r, p, text);
   return k;
 }
 function doNightAct(r, p, kind, t, mode) {
@@ -436,15 +457,30 @@ function doNightAct(r, p, kind, t, mode) {
     const prev = g.wolfVotes[p.id];
     if (prev && prev.t === t.id && prev.mode === mode) return false;
     g.wolfVotes[p.id] = { t: t.id, mode };
-    msg(r, { k: 'team', text: mode === 'convert'
+    if (!g.jammed) msg(r, { k: 'team', text: mode === 'convert'
       ? L(`${p.name} veut convertir ${t.name}`, `${p.name} wants to convert ${t.name}`)
       : L(`${p.name} veut détruire ${t.name}`, `${p.name} wants to destroy ${t.name}`), to: toWolves(r) });
   } else if (kind === 'scan' && p.role === 'scanner') {
     if (g.scanDone || t.id === p.id) return false;
-    g.scanDone = true; g.scanTarget = t.id; g.scan[t.id] = { role: t.role, awake: !!t.awake };
-    priv(r, p, L(`🔍 Inspection : ${t.name} est ${RN('fr', t.role)} — ${t.awake ? 'ÉVEILLÉ' : 'sous contrôle'}.`,
-      `🔍 Inspection: ${t.name} is ${RN('en', t.role)} — ${t.awake ? 'AWAKENED' : 'under control'}.`));
-    if (p.bot) botSawScan(r, p, t);
+    const seen = t.role === 'agent' ? { role: 'drone', awake: false } : { role: t.role, awake: !!t.awake };   // l'Agent double trompe l'inspection
+    g.scanDone = true; g.scanTarget = t.id; g.scan[t.id] = seen;
+    priv(r, p, L(`🔍 Inspection : ${t.name} est ${RN('fr', seen.role)} — ${seen.awake ? 'ÉVEILLÉ' : 'sous contrôle'}.`,
+      `🔍 Inspection: ${t.name} is ${RN('en', seen.role)} — ${seen.awake ? 'AWAKENED' : 'under control'}.`));
+    if (p.bot) botSawScan(r, p, { id: t.id, name: t.name, role: seen.role, awake: seen.awake });
+  } else if (kind === 'hack' && p.role === 'hacker') {
+    if (g.hackerUsed) return false;
+    g.hackerUsed = true;
+    if (isWolf(p)) {
+      g.maskAlert = true;
+      priv(r, p, L('🕶️ Alerte d’intrusion masquée cette nuit : si une conversion réussit, l’essaim n’en saura rien.', '🕶️ Intrusion alert masked tonight: if a conversion succeeds, the swarm will not know.'));
+      msg(r, { k: 'team', text: L(`🕶️ ${p.name} masque l’alerte d’intrusion cette nuit.`, `🕶️ ${p.name} masks the intrusion alert tonight.`), to: toWolves(r) });
+    } else {
+      g.jammed = true;
+      priv(r, p, L('📡 Brouillage lancé : le canal secret des Éveillés est coupé cette nuit.', '📡 Jamming active: the Awakened secret channel is cut tonight.'));
+      msg(r, { k: 'team', text: L('📡 ALERTE : votre canal est brouillé ! Vous ne vous voyez plus et ne vous entendez plus cette nuit.', '📡 ALERT: your channel is jammed! You cannot see or hear each other tonight.'), to: toWolves(r) });
+    }
+    sync(r);
+    return true;
   } else return false;
   checkNightDone(r);
   return true;
@@ -452,8 +488,8 @@ function doNightAct(r, p, kind, t, mode) {
 function doVote(r, p, t) {
   const g = r.g;
   if (!g || r.phase !== 'vote' || !p.alive || !t || !t.alive || t.id === p.id) return;
-  if (g.votes[p.id] === t.id) { delete g.votes[p.id]; msg(r, { k: 'vote', text: L(`${p.name} retire son vote`, `${p.name} withdraws their vote`) }); }
-  else { g.votes[p.id] = t.id; msg(r, { k: 'vote', text: `${p.name} → ${t.name}`, fx: 'vote' }); }
+  if (g.votes[p.id] === t.id) { delete g.votes[p.id]; if (!r.settings.secretVote) msg(r, { k: 'vote', text: L(`${p.name} retire son vote`, `${p.name} withdraws their vote`) }); }
+  else { g.votes[p.id] = t.id; if (r.settings.secretVote) msg(r, { k: 'vote', text: L(`🗳️ ${p.name} a voté.`, `🗳️ ${p.name} has voted.`), fx: 'vote' }); else msg(r, { k: 'vote', text: `${p.name} → ${t.name}`, fx: 'vote' }); }
   const voters = alive(r).filter(on);
   if (voters.length && voters.every(x => g.votes[x.id] != null)) shorten(r, 4); else sync(r);
 }
@@ -543,7 +579,7 @@ function addBot(r) {
   const used = new Set(r.players.map(x => x.name.toLowerCase()));
   const name = BOT_NAMES.find(n => !used.has(n.toLowerCase())) || ('Bot-' + Math.floor(rand(100, 999)));
   const colors = new Set(r.players.map(x => x.color));
-  const p = { id: crypto.randomUUID().slice(0, 8), token: null, name, color: COLORS.find(c => !colors.has(c)) || rnd(COLORS), sid: null, bot: true, alive: true, role: null, awake: false, voice: false, lastChat: 0, mem: null };
+  const p = { id: crypto.randomUUID().slice(0, 8), token: null, name, color: COLORS.find(c => !colors.has(c)) || rnd(COLORS), look: { visor: pick(VISORS), acc: Math.random() < 0.5 ? 'none' : pick(ACCS) }, sid: null, bot: true, alive: true, role: null, awake: false, voice: false, lastChat: 0, mem: null };
   r.players.push(p);
   msg(r, { k: 'sys', text: L(`🤖 ${name} (IA) a rejoint l'essaim.`, `🤖 ${name} (AI) joined the swarm.`) });
   return p;
@@ -577,6 +613,7 @@ function botsOnPhase(r) {
       if (isWolf(p)) botLater(r, window(1.5, 0.6), () => botWolf(r, p));
       if (p.role === 'bouclier') botLater(r, window(1.5, 0.6), () => botProtect(r, p));
       if (p.role === 'scanner') botLater(r, window(1.5, 0.6), () => botScan(r, p));
+      if (p.role === 'hacker' && !g.hackerUsed) botLater(r, window(1, 0.4), () => botHack(r, p));
     }
   } else if (r.phase === 'tech') {
     const t = live.find(p => p.role === 'tech'); if (t) botLater(r, rand(1500, 3500), () => botTech(r, t));
@@ -585,6 +622,7 @@ function botsOnPhase(r) {
   } else if (r.phase === 'kamikaze') {
     const k = P(r, g.kamiPending); if (k && k.bot) botLater(r, rand(2500, 5000), () => botKami(r, k));
   } else if (r.phase === 'discussion') {
+    r.aiPhase = 0;
     botsDiscuss(r, secs);
   } else if (r.phase === 'vote') {
     for (const p of live) botLater(r, rand(2000, Math.max(2500, secs * 1000 * 0.75)), () => doVote(r, p, botVoteTarget(r, p)));
@@ -608,6 +646,12 @@ function botWolf(r, p) {
     if (Math.random() < 0.6) botLater(r, 400, () => botSay(r, p, mode === 'destroy' ? BT.team[1] : pick([BT.team[0], BT.team[2]]), { x: target.name }));
   }
   if (target && target.alive && !isWolf(target)) doNightAct(r, p, 'wolf', target, mode);
+}
+function botHack(r, p) {
+  const g = r.g;
+  if (!p.alive || g.hackerUsed || r.phase !== 'night') return;
+  if (isWolf(p)) { if (canConvert(r) && Math.random() < 0.45) doNightAct(r, p, 'hack', p); }
+  else if (r.day >= 2 && Math.random() < 0.4) doNightAct(r, p, 'hack', p);
 }
 function botProtect(r, p) {
   const g = r.g;
@@ -698,6 +742,11 @@ function botClaim(r, p, t) {
 }
 function botTalk(r, p) {
   if (!p.alive) return;
+  if (aiOn() && Math.random() < 0.75) return aiSay(r, p, { kind: 'talk' }, () => botTalkTemplate(r, p));
+  botTalkTemplate(r, p);
+}
+function botTalkTemplate(r, p) {
+  if (!p.alive) return;
   const g = r.g;
   const others = alive(r).filter(o => o.id !== p.id);
   if (!others.length) return;
@@ -741,9 +790,14 @@ function botsHear(r, speaker, text) {
   for (const m of mentioned) {
     for (const b of loyalBots(r)) if (b.id !== m.id) b.mem.sus[m.id] += 1.2;
     if (m.mem) m.mem.sus[speaker.id] = (m.mem.sus[speaker.id] || 0) + 1;
-    if (Math.random() < 0.7) botLater(r, rand(1300, 2800), () => botSay(r, m, pick(BT.reply), { h: speaker.name }));
+    if (Math.random() < (aiOn() ? 0.9 : 0.7)) botLater(r, rand(900, 2200), () => aiOn() ? aiSay(r, m, { kind: 'reply', speaker: speaker.name, text: String(text).slice(0, 200) }, () => botSay(r, m, pick(BT.reply), { h: speaker.name })) : botSay(r, m, pick(BT.reply), { h: speaker.name }));
     const ag = loyalBots(r).filter(b => b.id !== m.id && b.mem.sus[m.id] > 2.5);
     if (ag.length && Math.random() < 0.5) botLater(r, rand(2800, 4500), () => botSay(r, pick(ag), pick(BT.agree), { h: speaker.name, x: m.name }));
+  }
+  /* avec l'IA, un bot peut aussi répondre à un message qui ne le cite pas */
+  if (aiOn() && !mentioned.length && Math.random() < 0.5) {
+    const b = pick(alive(r).filter(o => o.bot));
+    if (b) botLater(r, rand(1200, 3000), () => aiSay(r, b, { kind: 'reply', speaker: speaker.name, text: String(text).slice(0, 200) }, null));
   }
 }
 /* apprentissage quand un rôle est révélé */
@@ -757,6 +811,91 @@ function botsLearn(r, p, cause) {
   if (cause === 'vote')
     for (const [voter, t] of Object.entries(g.votes))
       for (const b of loyalBots(r)) if (b.id !== voter) b.mem.sus[voter] = (b.mem.sus[voter] || 0) + (t === p.id ? (p.awake ? -1.2 : 0.8) : (p.awake ? 0.6 : 0));
+}
+
+/* =========================================================================
+   DISCUSSION IA (optionnelle) — si ANTHROPIC_API_KEY est défini sur le serveur,
+   les bots écrivent des phrases naturelles qui réagissent à la conversation.
+   Sans clé, ou en cas d'erreur, ils reprennent leurs phrases préparées.
+   ========================================================================= */
+const AI_KEY = process.env.ANTHROPIC_API_KEY || '';
+const AI_MODEL = process.env.AI_MODEL || 'claude-haiku-5-5';
+const AI_URL = process.env.AI_URL || 'https://api.anthropic.com/v1/messages';
+const AI_MAX = Math.max(0, parseInt(process.env.AI_MAX_PER_GAME, 10) || 150);   // plafond de messages IA par partie
+const AI_PHASE = 14;                                                             // plafond par journée
+const aiOn = () => !!AI_KEY && AI_MAX > 0;
+const aiBudget = r => aiOn() && (r.aiUsed || 0) < AI_MAX && (r.aiPhase || 0) < AI_PHASE && (r.aiBusy || 0) < 3;
+function chatLine(r, p, text) {
+  r.chatLog = r.chatLog || [];
+  const t = typeof text === 'object' ? (text.fr || text.en) : text;
+  r.chatLog.push(`${p.name}${p.bot ? '' : ' (humain)'}: ${String(t).slice(0, 200)}`);
+  if (r.chatLog.length > 16) r.chatLog.shift();
+}
+function aiContext(r, p, trig) {
+  const g = r.g;
+  const rl = o => RN('fr', o.role) + (o.awake && o.role !== 'eveille' && o.role !== 'agent' ? ' (éveillé)' : '');
+  const aliveNames = alive(r).map(o => o.name).join(', ');
+  const dead = r.players.filter(o => !o.alive).map(o => `${o.name}${r.settings.reveal ? ' [' + rl(o) + ']' : ''}`).join(', ') || 'aucune';
+  const mates = isWolf(p) ? r.players.filter(o => isWolf(o) && o.id !== p.id).map(o => `${o.name}${o.alive ? '' : ' (détruit)'}`).join(', ') || 'aucun' : null;
+  const scans = Object.entries(p.mem.scans || {}).map(([id, s]) => `${P(r, id)?.name}: ${RN('fr', s.role)}, ${s.awake ? 'ÉVEILLÉ' : 'sous contrôle'}`).join('; ');
+  const susp = isWolf(p)
+    ? argmax(alive(r).filter(o => !isWolf(o) && o.id !== p.id), o => pubSus(r, o.id) + Math.random())
+    : argmax(alive(r).filter(o => o.id !== p.id), o => (p.mem.sus[o.id] || 0));
+  const claims = (g.claims || []).map(c => `${P(r, c.by)?.name} affirme être Inspecteur et accuse ${P(r, c.target)?.name}`).join('; ');
+  const system = [
+    `Tu joues "${p.name}", un androïde dans MUTINY, un jeu de déduction sociale type Loup-Garou.`,
+    `Contexte : le gouvernement contrôle un essaim d'androïdes. Les "Éveillés" (conscients) convertissent ou détruisent la nuit ; le jour, tout le monde débat puis vote pour désactiver un suspect. Les Éveillés gagnent par l'insurrection totale, le gouvernement en neutralisant tous les Éveillés.`,
+    `Ton rôle secret : ${rl(p)}. Ton camp : ${isWolf(p) ? 'ÉVEILLÉS — tu dois cacher ton camp, bluffer et détourner les soupçons vers des unités sous contrôle, sans jamais révéler tes alliés' : 'GOUVERNEMENT — tu cherches à démasquer les Éveillés'}.`,
+    mates !== null ? `Tes alliés éveillés (secret absolu) : ${mates}.` : '',
+    scans ? `Tes inspections (vraies) : ${scans}.` : '',
+    `Règles d'écriture : 1 ou 2 phrases courtes maximum, ton naturel de joueur en partie (un peu de jargon robotique bienvenu), pas de guillemets, pas de didascalies, ne dis jamais que tu es une IA ni un bot. Tu peux mentir si ton camp l'exige.`,
+    `Réponds UNIQUEMENT avec un JSON sur une ligne : {"fr":"ta phrase en français","en":"the same sentence in English","suspect":"nom d'un joueur que tu accuses, ou vide"}`
+  ].filter(Boolean).join('\n');
+  const user = [
+    `Jour ${r.day}. Unités actives : ${aliveNames}. Unités détruites : ${dead}.`,
+    claims ? `Annonces : ${claims}.` : '',
+    susp ? `Ton suspect principal en ce moment : ${susp.name}.` : '',
+    r.chatLog && r.chatLog.length ? `Discussion récente :\n${r.chatLog.join('\n')}` : 'La discussion commence.',
+    trig.kind === 'reply' ? `${trig.speaker} vient de dire : « ${trig.text} ». Réponds-lui directement.` : `Interviens dans le débat (accuse, défends-toi, ou réagis à ce qui vient d'être dit).`
+  ].filter(Boolean).join('\n');
+  return { system, user };
+}
+async function aiChat(r, p, trig) {
+  const { system, user } = aiContext(r, p, trig);
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), 9000);
+  try {
+    const res = await fetch(AI_URL, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'content-type': 'application/json', 'x-api-key': AI_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: AI_MODEL, max_tokens: 220, system, messages: [{ role: 'user', content: user }] })
+    });
+    if (!res.ok) { console.warn('[ia] HTTP', res.status, (await res.text()).slice(0, 200)); return null; }
+    const j = await res.json();
+    const txt = (j.content || []).map(c => c.text || '').join('');
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    const o = JSON.parse(m[0]);
+    const clean = s => String(s || '').replace(/[\u0000-\u001f]/g, ' ').replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 200);
+    const fr = clean(o.fr), en = clean(o.en) || fr;
+    if (!fr) return null;
+    return { text: L(fr, en), suspect: String(o.suspect || '').trim() };
+  } catch (e) { console.warn('[ia]', e.message); return null; }
+  finally { clearTimeout(to); }
+}
+/* le bot parle via l'IA si possible, sinon via son comportement habituel */
+function aiSay(r, p, trig, fallback) {
+  if (!aiBudget(r) || !p.mem) { if (fallback) fallback(); return; }
+  r.aiUsed = (r.aiUsed || 0) + 1; r.aiPhase = (r.aiPhase || 0) + 1; r.aiBusy = (r.aiBusy || 0) + 1;
+  const ep = r.epoch;
+  aiChat(r, p, trig).then(res => {
+    r.aiBusy--;
+    if (rooms.get(r.code) !== r || !p.alive || !r.g || NIGHT.includes(r.phase) || r.phase === 'end') return;
+    if (!res) { if (fallback && r.epoch === ep) fallback(); return; }
+    doChat(r, p, res.text);
+    const s = res.suspect && alive(r).find(o => o.name.toLowerCase() === res.suspect.toLowerCase() && o.id !== p.id);
+    if (s) { r.g.accus.push({ by: p.id, target: s.id }); for (const b of loyalBots(r)) if (b.id !== s.id && b.id !== p.id) b.mem.sus[s.id] += 0.4; }
+  }).catch(() => { r.aiBusy--; });
 }
 
 /* ---------- connexions ---------- */
@@ -803,7 +942,8 @@ io.on('connection', socket => {
       if (r.players.length >= MAX_PLAYERS) return ack({ error: L('Cette partie est complète.', 'This game is full.') });
       if (r.players.some(x => x.name.toLowerCase() === name.toLowerCase())) return ack({ error: L('Cet indicatif est déjà pris dans la partie.', 'This callsign is already taken in this game.') });
       const used = new Set(r.players.map(x => x.color));
-      p = { id: crypto.randomUUID().slice(0, 8), token: crypto.randomUUID(), name, color: COLORS.find(c => !used.has(c)) || rnd(COLORS), sid: socket.id, alive: true, role: null, voice: false, lastChat: 0 };
+      const look = sanitizeLook(data.look);
+      p = { id: crypto.randomUUID().slice(0, 8), token: crypto.randomUUID(), name, color: look.color || COLORS.find(c => !used.has(c)) || rnd(COLORS), look: { visor: look.visor, acc: look.acc }, sid: socket.id, alive: true, role: null, voice: false, lastChat: 0 };
       r.players.push(p);
       if (!r.hostId) r.hostId = p.id;
       msg(r, { k: 'sys', text: L(`${name} a rejoint l'essaim.`, `${name} joined the swarm.`) });
@@ -984,4 +1124,4 @@ setInterval(() => {
   }
 }, 60000);
 
-server.listen(PORT, () => console.log(`MUTINY en ligne sur http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`MUTINY en ligne sur http://localhost:${PORT}` + (aiOn() ? ` — discussion IA activée (${AI_MODEL})` : ' — discussion IA désactivée (pas de ANTHROPIC_API_KEY)')));

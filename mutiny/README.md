@@ -32,8 +32,14 @@ Si c'est une conversion, la cible reçoit un choix secret : **accepter l'éveil*
 | Technicienne / Technician | Un patch de réinitialisation (annule l'attaque de la nuit, conversion comprise) et une impulsion EMP (détruit), une fois chacun |
 | Pare-feu / Firewall | Protège une unité par nuit contre la conversion et la destruction, jamais la même deux nuits de suite |
 | Kamikaze | En étant détruit, emporte une unité avec lui |
+| Agent double / Double Agent | Éveillé dès le départ, mais apparaît « Unité sous contrôle » à l'inspection |
+| Hacker | Une fois par partie, brouille la nuit le canal secret des Éveillés (converti : masque une alerte d'intrusion) |
 
 Une unité spéciale convertie garde son pouvoir, mais joue désormais pour les Éveillés.
+
+**Variantes** (réglages de l'hôte) : vote secret (révélé à la fin du vote), pas de vote le premier jour, conversion forcée (la cible ne peut pas refuser).
+
+**Profil** (bouton 👤 sur l'accueil) : avatar personnalisé (couleur, visière, accessoire), statistiques et 12 succès, enregistrés dans le navigateur du joueur.
 
 ## Qui entend qui (vocal et chat)
 
@@ -107,3 +113,16 @@ drones-eveilles/
 └── public/
     └── index.html     ← l'interface du jeu (accueil, salon, plateau, chat, vocal)
 ```
+
+## Discussion IA des bots (optionnel)
+
+Par défaut, les bots utilisent des phrases préparées. Pour qu'ils discutent **naturellement** (ils réagissent à ce que disent les joueurs, bluffent, accusent, en français et en anglais), ajoute une clé API Claude :
+
+1. Crée une clé sur la console développeur d'Anthropic (documentation : https://docs.claude.com) et ajoute un peu de crédit.
+2. Sur Render, ouvre ton service → **Environment** → **Add Environment Variable** :
+   - `ANTHROPIC_API_KEY` = ta clé (`sk-ant-…`)
+   - (optionnel) `AI_MAX_PER_GAME` = nombre maximum de messages IA par partie (150 par défaut), pour maîtriser le budget
+   - (optionnel) `AI_MODEL` = modèle utilisé (`claude-haiku-5-5` par défaut, le plus économique)
+3. Enregistre : Render redémarre le service. Les journaux affichent « discussion IA activée ».
+
+La clé reste sur le serveur : elle n'est jamais envoyée aux joueurs ni stockée dans GitHub. Les messages du chat public sont transmis à l'API pour générer les réponses des bots. En cas d'erreur, de dépassement du plafond ou sans clé, les bots reviennent automatiquement à leurs phrases préparées.
