@@ -20,8 +20,25 @@ app.get('/health', (_q, r) => r.send('ok'));
 
 /* serveurs TURN pour le vocal (relais quand la connexion directe échoue) */
 let iceCache = null, iceAt = 0;
+/* accepte le JSON strict ou le code JavaScript copié depuis Metered (clés sans guillemets, « iceServers: », virgules finales…) */
+function parseIce(raw) {
+  let t = String(raw).trim();
+  const i = t.indexOf('['), j = t.lastIndexOf(']');
+  if (i >= 0 && j > i) t = t.slice(i, j + 1);
+  else { const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a >= 0 && b > a) t = '[' + t.slice(a, b + 1) + ']'; }
+  const tries = [t, t.replace(/'/g, '"').replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":').replace(/,\s*([\]}])/g, '$1')];
+  for (const x of tries) {
+    try {
+      const a = JSON.parse(x);
+      const list = (Array.isArray(a) ? a : [a]).filter(o => o && o.urls);
+      if (list.length) return list;
+    } catch (e) {}
+  }
+  console.warn('[vocal] TURN_ICE illisible : ' + String(raw).slice(0, 40).replace(/credential.*/i, '…'));
+  return null;
+}
 async function turnServers() {
-  if (process.env.TURN_ICE) { try { const a = JSON.parse(process.env.TURN_ICE); return Array.isArray(a) ? a : [a]; } catch (e) { console.warn('[vocal] TURN_ICE illisible (JSON attendu)'); } }
+  if (process.env.TURN_ICE) { const a = parseIce(process.env.TURN_ICE); if (a) return a; }
   if (process.env.TURN_URLS) return [{ urls: process.env.TURN_URLS.split(',').map(x => x.trim()).filter(Boolean), username: process.env.TURN_USER || '', credential: process.env.TURN_PASS || '' }];
   if (process.env.TURN_API_URL) {
     if (iceCache && Date.now() - iceAt < 3600e3) return iceCache;
@@ -1280,5 +1297,5 @@ setInterval(() => {
   }
 }, 60000);
 
-const turnOn = !!(process.env.TURN_ICE || process.env.TURN_URLS || process.env.TURN_API_URL);
+const turnOn = !!((process.env.TURN_ICE && parseIce(process.env.TURN_ICE)) || process.env.TURN_URLS || process.env.TURN_API_URL);
 server.listen(PORT, () => console.log((turnOn ? '[vocal] relais TURN configuré\n' : '[vocal] pas de relais TURN : le vocal peut échouer entre certains réseaux\n') + `MUTINY en ligne sur http://localhost:${PORT}` + (aiOn() ? ` — discussion IA activée (${AI_MODEL})` : ' — discussion IA désactivée (pas de ANTHROPIC_API_KEY)')));
