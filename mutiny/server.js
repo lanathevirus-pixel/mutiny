@@ -244,8 +244,15 @@ function view(r, p) {
 }
 /* écran de diffusion (mode streamer) : uniquement jour/nuit et minuteur, rien de secret */
 function screenView(r) {
+  const g = r.g, over = r.phase === 'end';
   return { code: r.code, phase: r.phase, day: r.day, remaining: r.deadline ? Math.max(0, r.deadline - Date.now()) : 0,
-    winner: r.phase === 'end' && r.g ? r.g.winner : null };
+    winner: over && g ? g.winner : null, captain: g ? g.captain || null : null, kami: g ? g.kamiPending || null : null, succ: g ? g.succPending || null : null,
+    votes: g && r.phase === 'vote' && !r.settings.secretVote ? g.votes : g && r.phase === 'election' && !r.settings.secretVote ? g.capVotes : null,
+    players: r.players.map(o => {
+      const vis = r.phase !== 'lobby' && o.role && (over || (!o.alive && r.settings.reveal));
+      return { id: o.id, name: o.name, color: o.color, look: o.look || null, alive: o.alive, connected: on(o), bot: !!o.bot, voice: !!o.voice,
+        role: vis ? o.role : null, awake: vis ? !!o.awake : false };
+    }) };
 }
 function sync(r) {
   io.to('scr:' + r.code).emit('screen', screenView(r));
