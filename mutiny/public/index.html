@@ -235,6 +235,8 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 .choicebtns .btn{margin-top:0}
 .btn.violet{background:linear-gradient(135deg,#b388ff,#6d3fd6);box-shadow:0 10px 30px rgba(179,136,255,.35)}
 .note{font-size:13.5px;color:var(--muted)}
+.typing{min-height:20px;padding:0 12px 2px;font-size:13px;color:var(--muted);font-style:italic}
+.typing .dots3{display:inline-block;animation:blink 1.2s infinite}
 .botb{position:absolute;bottom:-4px;left:-4px;font-size:12px;background:#0b1224;border:1px solid var(--line);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
 .m .bt{font-size:11px;margin-right:3px;opacity:.8}
 .homebtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
@@ -368,6 +370,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
       <div class="card voicebar" id="voicebar"></div>
       <div class="card chatbox">
         <div class="log" id="log"></div>
+        <div class="typing" id="typing"></div>
         <form class="chatin" id="chatform">
           <input id="chatinput" maxlength="200" autocomplete="off">
           <button id="chatsend" data-i18n="send"></button>
@@ -458,6 +461,7 @@ fr:{
   ac_first:'Première activation|Jouer ta première partie',ac_win:'Première victoire|Gagner une partie',ac_rebel:'Insurgé|Gagner dans le camp des Éveillés',ac_loyal:'Loyaliste|Gagner dans le camp du gouvernement',
   ac_turn:'Libéré|Accepter l’éveil',ac_turnwin:'Révolution intérieure|Gagner après avoir été converti',ac_martyr:'Fidèle jusqu’au bout|Choisir l’autodestruction',ac_surv:'Survivant|Être en vie à la fin de 5 parties',
   ac_detect:'Détecteur|Démasquer un Éveillé en tant qu’Inspecteur',ac_solo:'Entraînement terminé|Gagner une partie solo',ac_vet:'Vétéran|Jouer 10 parties',ac_legend:'Légende de l’essaim|Jouer 50 parties',
+  typing1:'{x} est en train d’écrire',typingN:'{x} sont en train d’écrire',
   solo:'🤖 PARTIE SOLO',tutorial:'📖 TUTORIEL',addBot:'＋ 🤖 Ajouter un bot',botTag:'🤖',
   sfx:'Effets',music:'Musique',
   hintWolf:'Astuce : choisis une cible, puis « Convertir » (elle peut accepter) ou « Détruire » (sans appel).',
@@ -545,6 +549,7 @@ en:{
   ac_first:'First boot|Play your first game',ac_win:'First win|Win a game',ac_rebel:'Insurgent|Win on the Awakened side',ac_loyal:'Loyalist|Win on the government side',
   ac_turn:'Liberated|Accept the awakening',ac_turnwin:'Inside revolution|Win after being converted',ac_martyr:'Loyal to the end|Choose self-destruction',ac_surv:'Survivor|Be alive at the end of 5 games',
   ac_detect:'Detector|Unmask an Awakened as the Inspector',ac_solo:'Training complete|Win a solo game',ac_vet:'Veteran|Play 10 games',ac_legend:'Swarm legend|Play 50 games',
+  typing1:'{x} is typing',typingN:'{x} are typing',
   solo:'🤖 SOLO GAME',tutorial:'📖 TUTORIAL',addBot:'＋ 🤖 Add a bot',botTag:'🤖',
   sfx:'Sound FX',music:'Music',
   hintWolf:'Tip: pick a target, then “Convert” (they may accept) or “Destroy” (no way out).',
@@ -739,7 +744,15 @@ socket.on('connect',()=>{
 });
 let LOG=[];
 socket.on('history',list=>{LOG=[];$('#log').innerHTML='';list.forEach(m=>addMsg(m,false));});
-socket.on('msg',m=>addMsg(m,true));
+const TYP={};
+function renderTyping(){
+  const now=Date.now();Object.keys(TYP).forEach(k=>{if(TYP[k].until<now)delete TYP[k]});
+  const n=Object.values(TYP).map(x=>x.name);const el=$('#typing');if(!el)return;
+  el.innerHTML=n.length?`${esc(t(n.length>1?'typingN':'typing1',{x:n.slice(0,3).join(', ')}))}<span class="dots3">…</span>`:'';
+}
+socket.on('typing',d=>{if(!d||!d.id)return;TYP[d.id]={name:d.name,until:Date.now()+12000};renderTyping();});
+setInterval(renderTyping,1000);
+socket.on('msg',m=>{if(m.from&&TYP[m.from]){delete TYP[m.from];renderTyping();}addMsg(m,true);});
 socket.on('kicked',()=>{ROOM=null;leaveVoice(false);show('home');history.replaceState(null,'',location.pathname);$('#herr').textContent=t('kicked');});
 socket.on('state',v=>{
   if(!ROOM)return;
