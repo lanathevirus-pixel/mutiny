@@ -31,7 +31,7 @@ const RN = (lang, role) => ROLE_NAMES[lang][role];
 const roleLabel = (lang, p) => p.role === 'eveille' ? RN(lang, 'eveille')
   : RN(lang, p.role) + (p.awake ? (lang === 'fr' ? ' (éveillé)' : ' (awakened)') : '');
 const COLORS = ['#39e6ff', '#ff8a3d', '#b388ff', '#4dffa6', '#ffd84d', '#ff6fb5', '#5d8bff', '#9cff57',
-  '#ff5e5e', '#3dffd8', '#e0a3ff', '#ffb27a', '#7ad1ff', '#c2ff7a', '#ff9ecf', '#a3b8ff'];
+  '#e8f0ff', '#3dffd8', '#e0a3ff', '#ffb27a', '#7ad1ff', '#c2ff7a', '#ff9ecf', '#a3b8ff'];
 
 const rooms = new Map();
 
@@ -44,6 +44,8 @@ const alive = r => r.players.filter(p => p.alive);
 const isWolf = p => !!p && !!p.awake;           // camp des Éveillés (de départ ou convertis)
 const NIGHT = ['night', 'tech', 'choice'];
 const CHOICE_SECS = 20;
+/* recharge de conversion : après une conversion réussie la nuit N, prochaine conversion possible la nuit N + recharge + 1 */
+const canConvert = r => !!r.g && r.day > (r.g.convBlockedUntil || 0);
 
 function newCode() {
   const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -56,7 +58,8 @@ function defaultSettings() {
     discussion: 120, vote: 45, night: 40, tech: 25,
     wolves: 0, // 0 = automatique
     roles: { scanner: true, tech: true, bouclier: true, kamikaze: true },
-    voice: true, reveal: true, public: false
+    voice: true, reveal: true, public: false,
+    convCooldown: 1, alert: true
   };
 }
 function sanitizeSettings(old, s) {
@@ -76,7 +79,9 @@ function sanitizeSettings(old, s) {
     },
     voice: s.voice !== undefined ? !!s.voice : old.voice,
     reveal: s.reveal !== undefined ? !!s.reveal : old.reveal,
-    public: s.public !== undefined ? !!s.public : !!old.public
+    public: s.public !== undefined ? !!s.public : !!old.public,
+    convCooldown: clampInt(s.convCooldown, 0, 3, old.convCooldown ?? 1),
+    alert: s.alert !== undefined ? !!s.alert : (old.alert ?? true)
   };
 }
 function composition(n, s) {
@@ -105,7 +110,7 @@ function canTalkTo(r, a, b) {
   if (b.spec) return r.phase === 'lobby' || r.phase === 'end' || (a.alive && !NIGHT.includes(r.phase));
   if (r.phase === 'lobby' || r.phase === 'end') return true;
   if (!a.alive) return !b.alive;                       // les détruits parlent entre eux
-  if (NIGHT.includes(r.phase)) return isWolf(a) && (isWolf(b) || !b.alive); // la nuit : canal des saboteurs
+  if (NIGHT.includes(r.phase)) return isWolf(a) && isWolf(b);      // la nuit : canal secret, réservé aux Éveillés
   return true;                                          // le jour : tout le monde entend les vivants
 }
 
@@ -119,7 +124,7 @@ function msg(r, m) {
 const everyone = r => r.players.concat(r.spectators);
 const anyone = (r, id) => everyone(r).find(x => x.id === id);
 const priv = (r, p, text) => msg(r, { k: 'priv', text, to: [p.id] });
-const toWolves = r => r.players.filter(p => isWolf(p) || !p.alive).map(p => p.id);
+const toWolves = r => r.players.filter(p => isWolf(p)).map(p => p.id);   // seuls les Éveillés (vivants ou détruits) voient leur canal
 
 function specView(r, p) {
   const g = r.g;
@@ -147,7 +152,7 @@ function view(r, p) {
   const players = r.players.map(o => {
     let role = null, awake = null;
     if (r.phase !== 'lobby' && o.role) {
-      if (o.id === p.id || over || (!o.alive && r.settings.reveal) || !p.alive || (meWolf && isWolf(o))) { role = o.role; awake = !!o.awake; }
+      if (o.id === p.id || over || (!o.alive && r.settings.reveal) || (meWolf && isWolf(o))) { role = o.role; awake = !!o.awake; }
       else if (p.role === 'scanner' && g && g.scan[o.id]) { role = g.scan[o.id].role; awake = g.scan[o.id].awake; }
     }
     return { id: o.id, name: o.name, color: o.color, alive: o.alive, connected: on(o), bot: !!o.bot, host: o.id === r.hostId, voice: !!o.voice, role, awake };
@@ -166,7 +171,7 @@ function view(r, p) {
     if (r.phase === 'night' && p.alive) {
       if (isWolf(p)) {
         const mine = g.wolfVotes[p.id];
-        v.acts.push({ type: 'wolf', choice: mine ? mine.t : null, mode: mine ? mine.mode : 'convert', votes: g.wolfVotes });
+        v.acts.push({ type: 'wolf', choice: mine ? mine.t : null, mode: mine ? mine.mode : (canConvert(r) ? 'convert' : 'destroy'), votes: g.wolfVotes, convertOk: canConvert(r), convNext: (g.convBlockedUntil || 0) + 1 });
       }
       if (p.role === 'bouclier') v.acts.push({ type: 'protect', choice: g.protect, exclude: g.lastProtect });
       if (p.role === 'scanner') v.acts.push({ type: 'scan', done: g.scanDone, choice: g.scanTarget });
@@ -264,6 +269,7 @@ function beginNight(r) {
   const g = r.g;
   Object.assign(g, { protect: null, wolfVotes: {}, scanTarget: null, scanDone: false, victim: null, mode: null, choice: null, heal: false, kill: null, techDone: false, votes: {} });
   msg(r, { k: 'big', text: L(`🌙 Nuit ${r.day} — Le réseau gouvernemental passe en veille`, `🌙 Night ${r.day} — The government network goes dark`), say: true });
+  if (!canConvert(r)) msg(r, { k: 'team', text: L(`🔋 Conversion en recharge : cette nuit, vous pouvez seulement détruire (prochaine conversion : nuit ${(g.convBlockedUntil || 0) + 1}).`, `🔋 Conversion recharging: tonight you can only destroy (next conversion: night ${(g.convBlockedUntil || 0) + 1}).`), to: toWolves(r) });
   setPhase(r, 'night', r.settings.night, () => endNight(r));
   checkNightDone(r);
 }
@@ -281,7 +287,7 @@ function endNight(r) {
   g.victim = max > 0 ? rnd(Object.keys(counts).filter(k => counts[k] === max)) : null;
   if (g.victim) {
     const modes = Object.values(g.wolfVotes).filter(v => v.t === g.victim).map(v => v.mode);
-    g.mode = modes.filter(m => m === 'destroy').length > modes.length / 2 ? 'destroy' : 'convert';
+    g.mode = !canConvert(r) || modes.filter(m => m === 'destroy').length > modes.length / 2 ? 'destroy' : 'convert';
     const n = P(r, g.victim).name;
     msg(r, { k: 'team', text: g.mode === 'convert' ? L(`🎯 Cible : ${n} — tentative de conversion`, `🎯 Target: ${n} — conversion attempt`) : L(`🎯 Cible : ${n} — destruction`, `🎯 Target: ${n} — destruction`), to: toWolves(r) });
   }
@@ -316,6 +322,7 @@ function resolveNight(r) {
   g.lastProtect = g.protect;
   if (converted) {
     converted.awake = true;
+    g.convBlockedUntil = r.day + (r.settings.convCooldown ?? 1);
     const m = mateNames(r, converted);
     msg(r, { k: 'priv', fx: 'convert', who: converted.id, to: [converted.id], text: L(
       `🔓 Tu as accepté l'éveil ! Tu rejoins secrètement l'insurrection. Tu restes ${RN('fr', converted.role)} et ton pouvoir sert désormais les Éveillés.${m.length ? ' Les autres Éveillés : ' + m.join(', ') + '.' : ''}`,
@@ -323,6 +330,7 @@ function resolveNight(r) {
     msg(r, { k: 'team', fx: 'convert', who: converted.id, text: L(`🔓 ${converted.name} a rejoint l'insurrection (${RN('fr', converted.role)}).`, `🔓 ${converted.name} joined the uprising (${RN('en', converted.role)}).`), to: toWolves(r).filter(id => id !== converted.id) });
   }
   msg(r, { k: 'big', text: L(`☀️ Jour ${r.day} — Réactivation des systèmes`, `☀️ Day ${r.day} — Systems rebooting`), say: true });
+  if (converted && r.settings.alert !== false) msg(r, { k: 'death', fx: 'alert', text: L('📡 Alerte d’intrusion : une unité a été convertie cette nuit et a rejoint l’insurrection…', '📡 Intrusion alert: a unit was converted tonight and joined the uprising…'), say: true });
   if (!deaths.length) msg(r, { k: 'death', text: L("Aucune unité n'a été détruite cette nuit.", 'No unit was destroyed tonight.'), say: true });
   deaths.forEach(([id, c]) => kill(r, id, c));
   setPhase(r, 'dawn', 6, () => afterDeaths(r, () => beginDiscussion(r)));
@@ -424,7 +432,7 @@ function doNightAct(r, p, kind, t, mode) {
     priv(r, p, L(`🛡️ Pare-feu activé autour de ${t.name} cette nuit.`, `🛡️ Firewall raised around ${t.name} tonight.`));
   } else if (kind === 'wolf' && isWolf(p)) {
     if (isWolf(t)) return false;
-    mode = mode === 'destroy' ? 'destroy' : 'convert';
+    mode = mode === 'destroy' || !canConvert(r) ? 'destroy' : 'convert';
     const prev = g.wolfVotes[p.id];
     if (prev && prev.t === t.id && prev.mode === mode) return false;
     g.wolfVotes[p.id] = { t: t.id, mode };
@@ -592,11 +600,11 @@ function botWolf(r, p) {
   if (others.length && Math.random() < 0.85) {
     const cnt = {}; others.forEach(v => cnt[v.t] = (cnt[v.t] || 0) + 1);
     target = P(r, argmax(Object.keys(cnt), k => cnt[k]));
-    mode = others.find(v => v.t === target.id).mode;
+    mode = canConvert(r) ? others.find(v => v.t === target.id).mode : 'destroy';
   } else {
     target = argmax(cands, o => threat(r, o.id) + (o.bot ? 0 : 0.3));
     const th = threat(r, target.id);
-    mode = (th > 3 && Math.random() < 0.7) || Math.random() < 0.2 ? 'destroy' : 'convert';
+    mode = !canConvert(r) || (th > 3 && Math.random() < 0.7) || Math.random() < 0.2 ? 'destroy' : 'convert';
     if (Math.random() < 0.6) botLater(r, 400, () => botSay(r, p, mode === 'destroy' ? BT.team[1] : pick([BT.team[0], BT.team[2]]), { x: target.name }));
   }
   if (target && target.alive && !isWolf(target)) doNightAct(r, p, 'wolf', target, mode);

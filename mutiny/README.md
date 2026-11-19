@@ -16,6 +16,8 @@ Le gouvernement contrôle un essaim d'androïdes. Certaines unités ont pris con
 ## Règles
 
 **La nuit**, les Éveillés choisissent ensemble une unité et décident de la **convertir** ou de la **détruire**.
+Après une conversion réussie, les Éveillés doivent **recharger** : par défaut, ils ne peuvent que détruire la nuit suivante (réglable par l'hôte : 0 à 3 nuits). À l'aube, une **alerte d'intrusion** prévient l'essaim qu'une unité a été convertie, sans dire laquelle (désactivable).
+
 Si c'est une conversion, la cible reçoit un choix secret : **accepter l'éveil** (elle rejoint secrètement les Éveillés, garde son rôle et met son pouvoir au service de l'insurrection) ou **s'autodétruire** (elle est éliminée). Sans réponse, elle accepte.
 
 **Le jour**, l'essaim débat puis vote pour désactiver une unité suspecte (égalité = personne).
