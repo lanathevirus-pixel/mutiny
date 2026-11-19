@@ -235,6 +235,7 @@ function setPhase(r, phase, secs, next) {
   r.deadline = secs ? Date.now() + secs * 1000 : 0;
   if (secs) r.timer = setTimeout(() => advance(r), secs * 1000);
   r.epoch = (r.epoch || 0) + 1;
+  if (['discussion', 'night', 'end', 'lobby'].includes(phase)) r.aiPhase = 0;
   sync(r);
   botsOnPhase(r);
 }
@@ -417,6 +418,7 @@ function checkWin(r) {
     ? L('🔴 Insurrection totale ! Les Éveillés ont libéré tout l’essaim.', '🔴 Total uprising! The Awakened have freed the whole swarm.')
     : L('🏛️ Le gouvernement reprend le contrôle : tous les Éveillés sont neutralisés.', '🏛️ The government regains control: every Awakened unit has been neutralized.'), say: true });
   setPhase(r, 'end', 0, null);
+  if (aiOn()) { const bs = r.players.filter(o => o.bot); if (bs.length) { botLater(r, rand(2500, 4500), () => aiSay(r, pick(bs), { kind: 'open' }, null)); } }
   return true;
 }
 function backToLobby(r) {
@@ -441,7 +443,7 @@ function doChat(r, p, text) {
   }
   const to = k === 'chat' ? null : r.players.filter(b => b.id === p.id || canTalkTo(r, p, b)).map(b => b.id);
   msg(r, { k, from: p.id, name: p.name, color: p.color, text, to, bot: !!p.bot });
-  if (k === 'chat' && r.g) chatLine(r, p, text);
+  if (k === 'chat') chatLine(r, p, text); else if (k === 'team') chatLine(r, p, text, true);
   return k;
 }
 function doNightAct(r, p, kind, t, mode) {
@@ -579,9 +581,10 @@ function addBot(r) {
   const used = new Set(r.players.map(x => x.name.toLowerCase()));
   const name = BOT_NAMES.find(n => !used.has(n.toLowerCase())) || ('Bot-' + Math.floor(rand(100, 999)));
   const colors = new Set(r.players.map(x => x.color));
-  const p = { id: crypto.randomUUID().slice(0, 8), token: null, name, color: COLORS.find(c => !colors.has(c)) || rnd(COLORS), look: { visor: pick(VISORS), acc: Math.random() < 0.5 ? 'none' : pick(ACCS) }, sid: null, bot: true, alive: true, role: null, awake: false, voice: false, lastChat: 0, mem: null };
+  const p = { id: crypto.randomUUID().slice(0, 8), token: null, name, color: COLORS.find(c => !colors.has(c)) || rnd(COLORS), look: { visor: pick(VISORS), acc: Math.random() < 0.5 ? 'none' : pick(ACCS) }, sid: null, bot: true, persona: PERSONAS[Math.floor(Math.random() * PERSONAS.length)], alive: true, role: null, awake: false, voice: false, lastChat: 0, mem: null };
   r.players.push(p);
   msg(r, { k: 'sys', text: L(`🤖 ${name} (IA) a rejoint l'essaim.`, `🤖 ${name} (AI) joined the swarm.`) });
+  if (aiOn() && Math.random() < 0.35) botLater(r, rand(1500, 4000), () => aiSay(r, p, { kind: 'open' }, null));
   return p;
 }
 function botsInit(r) {
@@ -742,7 +745,7 @@ function botClaim(r, p, t) {
 }
 function botTalk(r, p) {
   if (!p.alive) return;
-  if (aiOn() && Math.random() < 0.75) return aiSay(r, p, { kind: 'talk' }, () => botTalkTemplate(r, p));
+  if (aiOn()) return aiSay(r, p, { kind: 'talk' }, () => botTalkTemplate(r, p));
   botTalkTemplate(r, p);
 }
 function botTalkTemplate(r, p) {
@@ -782,22 +785,43 @@ function botsDiscuss(r, secs) {
   }
 }
 /* les bots réagissent quand un humain les mentionne */
-function botsHear(r, speaker, text) {
-  if (!r.g || speaker.bot || !speaker.alive || NIGHT.includes(r.phase) || r.phase === 'end') return;
+function botsHear(r, speaker, text, k = 'chat') {
+  if (speaker.bot) return;
   const low = String(text).toLowerCase();
+  const say = (b, delay) => botLater(r, delay, () => aiSay(r, b, { kind: 'reply', speaker: speaker.name, text: String(text).slice(0, 220), team: k === 'team' }, null));
+  /* nuit : les bots éveillés répondent sur le canal secret */
+  if (k === 'team') {
+    if (!aiOn()) return;
+    const mates = r.players.filter(o => o.bot && o.alive && isWolf(o));
+    if (mates.length && Math.random() < 0.85) say(pick(mates), rand(900, 2200));
+    return;
+  }
+  if (k !== 'chat') return;
+  /* salon d'attente et fin de partie : discussion libre */
+  if (!r.g || r.phase === 'end') {
+    if (!aiOn()) return;
+    const pool = r.players.filter(o => o.bot);
+    const mentioned = pool.filter(o => low.includes(o.name.toLowerCase()));
+    if (mentioned.length) mentioned.slice(0, 2).forEach((b, i) => say(b, rand(900, 2000) + i * 1500));
+    else if (pool.length && Math.random() < 0.75) { say(pick(pool), rand(1000, 2600)); if (Math.random() < 0.3) say(pick(pool), rand(3500, 6000)); }
+    return;
+  }
+  if (!speaker.alive || NIGHT.includes(r.phase)) return;
   const mentioned = alive(r).filter(o => o.bot && low.includes(o.name.toLowerCase()));
   if (/inspect/.test(low) && mentioned.length === 1 && /[ée]veill|awake/.test(low)) { applyClaim(r, speaker.id, mentioned[0].id, true); }
   for (const m of mentioned) {
     for (const b of loyalBots(r)) if (b.id !== m.id) b.mem.sus[m.id] += 1.2;
     if (m.mem) m.mem.sus[speaker.id] = (m.mem.sus[speaker.id] || 0) + 1;
-    if (Math.random() < (aiOn() ? 0.9 : 0.7)) botLater(r, rand(900, 2200), () => aiOn() ? aiSay(r, m, { kind: 'reply', speaker: speaker.name, text: String(text).slice(0, 200) }, () => botSay(r, m, pick(BT.reply), { h: speaker.name })) : botSay(r, m, pick(BT.reply), { h: speaker.name }));
+    if (aiOn()) { if (Math.random() < 0.92) botLater(r, rand(800, 2000), () => aiSay(r, m, { kind: 'reply', speaker: speaker.name, text: String(text).slice(0, 220) }, () => botSay(r, m, pick(BT.reply), { h: speaker.name }))); }
+    else if (Math.random() < 0.7) botLater(r, rand(1300, 2800), () => botSay(r, m, pick(BT.reply), { h: speaker.name }));
     const ag = loyalBots(r).filter(b => b.id !== m.id && b.mem.sus[m.id] > 2.5);
-    if (ag.length && Math.random() < 0.5) botLater(r, rand(2800, 4500), () => botSay(r, pick(ag), pick(BT.agree), { h: speaker.name, x: m.name }));
+    if (!aiOn() && ag.length && Math.random() < 0.5) botLater(r, rand(2800, 4500), () => botSay(r, pick(ag), pick(BT.agree), { h: speaker.name, x: m.name }));
   }
-  /* avec l'IA, un bot peut aussi répondre à un message qui ne le cite pas */
-  if (aiOn() && !mentioned.length && Math.random() < 0.5) {
-    const b = pick(alive(r).filter(o => o.bot));
-    if (b) botLater(r, rand(1200, 3000), () => aiSay(r, b, { kind: 'reply', speaker: speaker.name, text: String(text).slice(0, 200) }, null));
+  /* avec l'IA, un ou deux bots réagissent aussi aux messages qui ne les citent pas */
+  if (aiOn() && !mentioned.length) {
+    const pool = alive(r).filter(o => o.bot);
+    if (pool.length && Math.random() < 0.75) say(pick(pool), rand(1000, 2800));
+    if (pool.length > 1 && Math.random() < 0.25) say(pick(pool), rand(3500, 6500));
   }
 }
 /* apprentissage quand un rôle est révélé */
@@ -821,54 +845,88 @@ function botsLearn(r, p, cause) {
 const AI_KEY = process.env.ANTHROPIC_API_KEY || '';
 const AI_MODEL = process.env.AI_MODEL || 'claude-haiku-5-5';
 const AI_URL = process.env.AI_URL || 'https://api.anthropic.com/v1/messages';
-const AI_MAX = Math.max(0, parseInt(process.env.AI_MAX_PER_GAME, 10) || 150);   // plafond de messages IA par partie
-const AI_PHASE = 14;                                                             // plafond par journée
+const AI_MAX = Math.max(0, parseInt(process.env.AI_MAX_PER_GAME, 10) || 300);   // plafond de messages IA par partie
+const AI_PHASE = 30;                                                             // plafond par phase (journée, salon…)
 const aiOn = () => !!AI_KEY && AI_MAX > 0;
 const aiBudget = r => aiOn() && (r.aiUsed || 0) < AI_MAX && (r.aiPhase || 0) < AI_PHASE && (r.aiBusy || 0) < 3;
-function chatLine(r, p, text) {
-  r.chatLog = r.chatLog || [];
+/* personnalités des bots : donnent à chacun une façon d'écrire reconnaissable */
+const PERSONAS = [
+  'détendu et blagueur, adore les vannes, écrit comme sur Discord',
+  'méfiant et direct, phrases sèches, pose des questions piège',
+  'enthousiaste et énergique, parfois un emoji, s’emballe vite',
+  'calme et analytique, raisonne à voix haute, phrases posées',
+  'un peu dramatique, voit des complots partout, adore les théories',
+  'timide, écrit court et souvent en minuscules, hésite (« euh », « jsp »)',
+  'sarcastique mais sympa, taquine les autres gentiment',
+  'bavard, digresse volontiers sur d’autres sujets (films, bouffe, musique) puis revient au jeu',
+  'compétitif et sûr de lui, veut gagner, un peu chambreur',
+  'bienveillant, rassure les autres, essaie de calmer les tensions'
+];
+function chatLine(r, p, text, team) {
+  const key = team ? 'teamLog' : 'chatLog';
+  r[key] = r[key] || [];
   const t = typeof text === 'object' ? (text.fr || text.en) : text;
-  r.chatLog.push(`${p.name}${p.bot ? '' : ' (humain)'}: ${String(t).slice(0, 200)}`);
-  if (r.chatLog.length > 16) r.chatLog.shift();
+  r[key].push(`${p.name}: ${String(t).slice(0, 220)}`);
+  if (r[key].length > 30) r[key].shift();
+}
+function emitTyping(r, p, team) {
+  const aud = team ? r.players.filter(o => isWolf(o)) : everyone(r);
+  for (const o of aud) if (o.sid) io.to(o.sid).emit('typing', { id: p.id, name: p.name, team: !!team });
 }
 function aiContext(r, p, trig) {
   const g = r.g;
-  const rl = o => RN('fr', o.role) + (o.awake && o.role !== 'eveille' && o.role !== 'agent' ? ' (éveillé)' : '');
-  const aliveNames = alive(r).map(o => o.name).join(', ');
-  const dead = r.players.filter(o => !o.alive).map(o => `${o.name}${r.settings.reveal ? ' [' + rl(o) + ']' : ''}`).join(', ') || 'aucune';
-  const mates = isWolf(p) ? r.players.filter(o => isWolf(o) && o.id !== p.id).map(o => `${o.name}${o.alive ? '' : ' (détruit)'}`).join(', ') || 'aucun' : null;
-  const scans = Object.entries(p.mem.scans || {}).map(([id, s]) => `${P(r, id)?.name}: ${RN('fr', s.role)}, ${s.awake ? 'ÉVEILLÉ' : 'sous contrôle'}`).join('; ');
-  const susp = isWolf(p)
-    ? argmax(alive(r).filter(o => !isWolf(o) && o.id !== p.id), o => pubSus(r, o.id) + Math.random())
-    : argmax(alive(r).filter(o => o.id !== p.id), o => (p.mem.sus[o.id] || 0));
-  const claims = (g.claims || []).map(c => `${P(r, c.by)?.name} affirme être Inspecteur et accuse ${P(r, c.target)?.name}`).join('; ');
-  const system = [
-    `Tu joues "${p.name}", un androïde dans MUTINY, un jeu de déduction sociale type Loup-Garou.`,
-    `Contexte : le gouvernement contrôle un essaim d'androïdes. Les "Éveillés" (conscients) convertissent ou détruisent la nuit ; le jour, tout le monde débat puis vote pour désactiver un suspect. Les Éveillés gagnent par l'insurrection totale, le gouvernement en neutralisant tous les Éveillés.`,
-    `Ton rôle secret : ${rl(p)}. Ton camp : ${isWolf(p) ? 'ÉVEILLÉS — tu dois cacher ton camp, bluffer et détourner les soupçons vers des unités sous contrôle, sans jamais révéler tes alliés' : 'GOUVERNEMENT — tu cherches à démasquer les Éveillés'}.`,
-    mates !== null ? `Tes alliés éveillés (secret absolu) : ${mates}.` : '',
-    scans ? `Tes inspections (vraies) : ${scans}.` : '',
-    `Règles d'écriture : 1 ou 2 phrases courtes maximum, ton naturel de joueur en partie (un peu de jargon robotique bienvenu), pas de guillemets, pas de didascalies, ne dis jamais que tu es une IA ni un bot. Tu peux mentir si ton camp l'exige.`,
-    `Réponds UNIQUEMENT avec un JSON sur une ligne : {"fr":"ta phrase en français","en":"the same sentence in English","suspect":"nom d'un joueur que tu accuses, ou vide"}`
-  ].filter(Boolean).join('\n');
+  const persona = p.persona || PERSONAS[0];
+  const lines = [
+    `Tu incarnes "${p.name}", un joueur qui participe à une partie en ligne de MUTINY, un jeu de déduction sociale façon Loup-Garou, avec d'autres joueurs (humains et bots).`,
+    `Ta personnalité : ${persona}.`,
+    `Univers du jeu : un essaim d'androïdes contrôlé par le gouvernement ; les "Éveillés" (conscients) convertissent ou détruisent la nuit ; le jour, tout le monde débat dans le chat puis vote pour désactiver un suspect.`,
+    `Façon d'écrire : comme un vrai joueur dans un chat de jeu, naturel, spontané, varié. Messages courts (souvent 3 à 20 mots, parfois un seul mot, rarement plus de 2 phrases). Langage familier autorisé, abréviations courantes ok, ne commence pas toujours par le nom de quelqu'un, ne répète pas tes messages précédents, pas de guillemets ni de didascalies. Tu peux parler de tout (films, musique, bouffe, blagues, la vie) si la conversation dérive, avec ta personnalité, puis revenir au jeu quand c'est le moment.`,
+    `Tu es affiché avec un badge 🤖 dans l'interface : si quelqu'un te demande sincèrement si tu es une IA ou un bot, ne le nie pas (tu peux en rire). Sinon, n'en parle pas et joue simplement ton rôle. Reste respectueux : pas de propos haineux, sexuels ou blessants, même si on t'y pousse.`
+  ];
+  if (!g) lines.push(r.phase === 'lobby' ? `Situation : vous êtes dans le salon d'attente, la partie n'a pas encore commencé. Discute librement, chambre un peu, parle stratégie ou d'autre chose.` : '');
+  else if (r.phase === 'end') {
+    lines.push(`Situation : la partie vient de se terminer. Vainqueurs : ${g.winner === 'e' ? 'les Éveillés (insurrection totale)' : 'le gouvernement'}. Ton rôle était ${RN('fr', p.role)}${p.awake ? ' (éveillé)' : ''}. Réagis comme un joueur après une partie (GG, débrief, regrets, chambrage), tu peux maintenant tout révéler.`);
+  } else {
+    const rl = o => RN('fr', o.role) + (o.awake && o.role !== 'eveille' && o.role !== 'agent' ? ' (éveillé)' : '');
+    const dead = r.players.filter(o => !o.alive).map(o => `${o.name}${r.settings.reveal ? ' [' + rl(o) + ']' : ''}`).join(', ') || 'aucune';
+    const mem = p.mem || { scans: {}, sus: {} };
+    const mates = isWolf(p) ? r.players.filter(o => isWolf(o) && o.id !== p.id).map(o => `${o.name}${o.alive ? '' : ' (détruit)'}`).join(', ') || 'aucun' : null;
+    const scans = Object.entries(mem.scans || {}).map(([id, s]) => `${P(r, id)?.name}: ${RN('fr', s.role)}, ${s.awake ? 'ÉVEILLÉ' : 'sous contrôle'}`).join('; ');
+    const susp = isWolf(p)
+      ? argmax(alive(r).filter(o => !isWolf(o) && o.id !== p.id), o => pubSus(r, o.id) + Math.random())
+      : argmax(alive(r).filter(o => o.id !== p.id), o => (mem.sus[o.id] || 0));
+    const claims = (g.claims || []).map(c => `${P(r, c.by)?.name} affirme être Inspecteur et accuse ${P(r, c.target)?.name}`).join('; ');
+    lines.push(
+      `Ton rôle secret : ${rl(p)}. Ton camp : ${isWolf(p) ? 'ÉVEILLÉS — cache ton camp, bluffe, détourne les soupçons vers des unités sous contrôle, ne trahis jamais tes alliés en public' : 'GOUVERNEMENT — tu veux démasquer les Éveillés'}.`,
+      mates !== null ? `Tes alliés éveillés (secret absolu en public) : ${mates}.` : '',
+      scans ? `Tes inspections (vraies, à toi de décider si tu les révèles) : ${scans}.` : '',
+      `État de la partie : jour ${r.day}${NIGHT.includes(r.phase) ? ' (nuit en cours)' : ''}. Unités actives : ${alive(r).map(o => o.name).join(', ')}. Unités détruites : ${dead}.`,
+      claims ? `Annonces faites : ${claims}.` : '',
+      susp ? `Ton suspect principal : ${susp.name} (tu n'es pas obligé d'en parler).` : '',
+      trig.team ? `C'est la nuit et tu parles en PRIVÉ sur le canal secret des Éveillés avec tes alliés : sois franc avec eux, discute de la cible et de la stratégie.` : ''
+    );
+  }
+  lines.push(`Réponds UNIQUEMENT avec un JSON sur une ligne : {"fr":"ton message en français","en":"the same message in natural English","suspect":"nom d'un joueur que tu accuses dans ce message, sinon vide"}`);
+  const log = trig.team ? r.teamLog : r.chatLog;
+  const mine = (log || []).filter(l => l.startsWith(p.name + ':')).slice(-3);
   const user = [
-    `Jour ${r.day}. Unités actives : ${aliveNames}. Unités détruites : ${dead}.`,
-    claims ? `Annonces : ${claims}.` : '',
-    susp ? `Ton suspect principal en ce moment : ${susp.name}.` : '',
-    r.chatLog && r.chatLog.length ? `Discussion récente :\n${r.chatLog.join('\n')}` : 'La discussion commence.',
-    trig.kind === 'reply' ? `${trig.speaker} vient de dire : « ${trig.text} ». Réponds-lui directement.` : `Interviens dans le débat (accuse, défends-toi, ou réagis à ce qui vient d'être dit).`
+    log && log.length ? `Derniers messages du chat${trig.team ? ' secret' : ''} :\n${log.slice(-18).join('\n')}` : 'Le chat est encore vide.',
+    mine.length ? `(Tes derniers messages, à ne pas répéter : ${mine.map(l => l.slice(p.name.length + 2)).join(' / ')})` : '',
+    trig.kind === 'reply' ? `${trig.speaker} vient d'écrire : « ${trig.text} ». Réponds de façon naturelle (à lui, ou à la conversation).`
+      : trig.kind === 'open' ? `Lance ou relance la conversation avec un message spontané.`
+      : `Interviens dans le débat comme tu le sentirais (accuse, défends-toi, réagis, plaisante…).`
   ].filter(Boolean).join('\n');
-  return { system, user };
+  return { system: lines.filter(Boolean).join('\n'), user };
 }
 async function aiChat(r, p, trig) {
   const { system, user } = aiContext(r, p, trig);
   const ctrl = new AbortController();
-  const to = setTimeout(() => ctrl.abort(), 9000);
+  const to = setTimeout(() => ctrl.abort(), 10000);
   try {
     const res = await fetch(AI_URL, {
       method: 'POST', signal: ctrl.signal,
       headers: { 'content-type': 'application/json', 'x-api-key': AI_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: AI_MODEL, max_tokens: 220, system, messages: [{ role: 'user', content: user }] })
+      body: JSON.stringify({ model: AI_MODEL, max_tokens: 260, temperature: 1, system, messages: [{ role: 'user', content: user }] })
     });
     if (!res.ok) { console.warn('[ia] HTTP', res.status, (await res.text()).slice(0, 200)); return null; }
     const j = await res.json();
@@ -876,25 +934,42 @@ async function aiChat(r, p, trig) {
     const m = txt.match(/\{[\s\S]*\}/);
     if (!m) return null;
     const o = JSON.parse(m[0]);
-    const clean = s => String(s || '').replace(/[\u0000-\u001f]/g, ' ').replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 200);
+    const clean = s => String(s || '').replace(/[\u0000-\u001f]/g, ' ').replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 220);
     const fr = clean(o.fr), en = clean(o.en) || fr;
     if (!fr) return null;
     return { text: L(fr, en), suspect: String(o.suspect || '').trim() };
   } catch (e) { console.warn('[ia]', e.message); return null; }
   finally { clearTimeout(to); }
 }
-/* le bot parle via l'IA si possible, sinon via son comportement habituel */
+const canSpeakNow = (r, p, team) => team ? (r.phase === 'night' || r.phase === 'tech' || r.phase === 'choice') && p.alive && isWolf(p)
+  : r.phase === 'lobby' || r.phase === 'end' || (p.alive && !NIGHT.includes(r.phase));
+/* le bot parle via l'IA (avec « est en train d'écrire… » et un temps de frappe réaliste), sinon via son comportement habituel */
 function aiSay(r, p, trig, fallback) {
-  if (!aiBudget(r) || !p.mem) { if (fallback) fallback(); return; }
+  if (!aiBudget(r) || !canSpeakNow(r, p, trig.team)) { if (fallback) fallback(); return; }
   r.aiUsed = (r.aiUsed || 0) + 1; r.aiPhase = (r.aiPhase || 0) + 1; r.aiBusy = (r.aiBusy || 0) + 1;
-  const ep = r.epoch;
+  const ep = r.epoch, t0 = Date.now();
+  emitTyping(r, p, trig.team);
   aiChat(r, p, trig).then(res => {
-    r.aiBusy--;
-    if (rooms.get(r.code) !== r || !p.alive || !r.g || NIGHT.includes(r.phase) || r.phase === 'end') return;
-    if (!res) { if (fallback && r.epoch === ep) fallback(); return; }
-    doChat(r, p, res.text);
-    const s = res.suspect && alive(r).find(o => o.name.toLowerCase() === res.suspect.toLowerCase() && o.id !== p.id);
-    if (s) { r.g.accus.push({ by: p.id, target: s.id }); for (const b of loyalBots(r)) if (b.id !== s.id && b.id !== p.id) b.mem.sus[s.id] += 0.4; }
+    if (!res) { r.aiBusy--; if (fallback && r.epoch === ep && rooms.get(r.code) === r) fallback(); return; }
+    const len = (res.text.fr || '').length;
+    const typing = Math.min(7000, 500 + len * rand(35, 60));
+    setTimeout(() => {
+      r.aiBusy--;
+      if (rooms.get(r.code) !== r || !canSpeakNow(r, p, trig.team)) return;
+      doChat(r, p, res.text);
+      if (r.g && !trig.team) {
+        const s = res.suspect && alive(r).find(o => o.name.toLowerCase() === res.suspect.toLowerCase() && o.id !== p.id);
+        if (s) { (r.g.accus = r.g.accus || []).push({ by: p.id, target: s.id }); for (const b of loyalBots(r)) if (b.id !== s.id && b.id !== p.id) b.mem.sus[s.id] += 0.4; }
+      }
+      /* conversation entre bots : un autre bot réagit parfois */
+      const chain = trig.chain || 0;
+      if (chain < 2 && Math.random() < (chain ? 0.2 : 0.35)) {
+        const pool = r.players.filter(o => o.bot && o.id !== p.id && canSpeakNow(r, o, trig.team));
+        const named = pool.find(o => (res.text.fr || '').toLowerCase().includes(o.name.toLowerCase()));
+        const b = named || pick(pool);
+        if (b) botLater(r, rand(1200, 3500), () => aiSay(r, b, { kind: 'reply', speaker: p.name, text: res.text.fr, team: trig.team, chain: chain + 1 }, null));
+      }
+    }, Math.max(0, typing - (Date.now() - t0)));
   }).catch(() => { r.aiBusy--; });
 }
 
@@ -1039,7 +1114,7 @@ io.on('connection', socket => {
     if (now - p.lastChat < 500) return;
     p.lastChat = now;
     const k = doChat(r, p, text);
-    if (k === 'chat') botsHear(r, p, text);
+    if (k) botsHear(r, p, text, k);
   });
 
   socket.on('act', data => {

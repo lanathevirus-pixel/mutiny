@@ -116,12 +116,12 @@ drones-eveilles/
 
 ## Discussion IA des bots (optionnel)
 
-Par défaut, les bots utilisent des phrases préparées. Pour qu'ils discutent **naturellement** (ils réagissent à ce que disent les joueurs, bluffent, accusent, en français et en anglais), ajoute une clé API Claude :
+Par défaut, les bots utilisent des phrases préparées. Avec l'IA, chaque bot a sa **personnalité** (blagueur, méfiant, timide, bavard…), écrit comme un vrai joueur, parle de tout (pas seulement du jeu), se répond avec les autres bots, discute dans le salon, à la fin de la partie et la nuit sur le canal secret des Éveillés, avec un indicateur « … est en train d'écrire ». Pour qu'ils discutent **naturellement** (ils réagissent à ce que disent les joueurs, bluffent, accusent, en français et en anglais), ajoute une clé API Claude :
 
 1. Crée une clé sur la console développeur d'Anthropic (documentation : https://docs.claude.com) et ajoute un peu de crédit.
 2. Sur Render, ouvre ton service → **Environment** → **Add Environment Variable** :
    - `ANTHROPIC_API_KEY` = ta clé (`sk-ant-…`)
-   - (optionnel) `AI_MAX_PER_GAME` = nombre maximum de messages IA par partie (150 par défaut), pour maîtriser le budget
+   - (optionnel) `AI_MAX_PER_GAME` = nombre maximum de messages IA par partie (300 par défaut), pour maîtriser le budget
    - (optionnel) `AI_MODEL` = modèle utilisé (`claude-haiku-5-5` par défaut, le plus économique)
 3. Enregistre : Render redémarre le service. Les journaux affichent « discussion IA activée ».
 
