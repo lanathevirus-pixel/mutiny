@@ -126,3 +126,14 @@ Par défaut, les bots utilisent des phrases préparées. Avec l'IA, chaque bot a
 3. Enregistre : Render redémarre le service. Les journaux affichent « discussion IA activée ».
 
 La clé reste sur le serveur : elle n'est jamais envoyée aux joueurs ni stockée dans GitHub. Les messages du chat public sont transmis à l'API pour générer les réponses des bots. En cas d'erreur, de dépassement du plafond ou sans clé, les bots reviennent automatiquement à leurs phrases préparées.
+
+## Vocal entre réseaux différents (relais TURN)
+
+Sans relais, la connexion vocale directe échoue souvent entre deux box ou en 4G (chacun voit son micro s'allumer mais n'entend personne).
+Crée un compte gratuit Open Relay / Metered (https://www.metered.ca/tools/openrelay/), puis ajoute **une** de ces variables sur Render :
+
+- `TURN_ICE` : le tableau « ICE Servers » copié depuis le tableau de bord Metered (JSON, commence par `[`)
+- ou `TURN_API_URL` : l'adresse d'API des identifiants, du type `https://xxx.metered.live/api/v1/turn/credentials?apiKey=...`
+- ou `TURN_URLS` (séparées par des virgules) + `TURN_USER` + `TURN_PASS`
+
+Le log de démarrage indique `[vocal] relais TURN configuré` quand c'est pris en compte.

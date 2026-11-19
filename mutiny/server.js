@@ -17,6 +17,25 @@ const MAX_PLAYERS = 16;
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (_q, r) => r.send('ok'));
+
+/* serveurs TURN pour le vocal (relais quand la connexion directe échoue) */
+let iceCache = null, iceAt = 0;
+async function turnServers() {
+  if (process.env.TURN_ICE) { try { const a = JSON.parse(process.env.TURN_ICE); return Array.isArray(a) ? a : [a]; } catch (e) { console.warn('[vocal] TURN_ICE illisible (JSON attendu)'); } }
+  if (process.env.TURN_URLS) return [{ urls: process.env.TURN_URLS.split(',').map(x => x.trim()).filter(Boolean), username: process.env.TURN_USER || '', credential: process.env.TURN_PASS || '' }];
+  if (process.env.TURN_API_URL) {
+    if (iceCache && Date.now() - iceAt < 3600e3) return iceCache;
+    try {
+      const res = await fetch(process.env.TURN_API_URL, { signal: AbortSignal.timeout(5000) });
+      const j = await res.json();
+      if (Array.isArray(j)) { iceCache = j; iceAt = Date.now(); return j; }
+      console.warn('[vocal] réponse TURN inattendue', JSON.stringify(j).slice(0, 200));
+    } catch (e) { console.warn('[vocal] TURN injoignable :', e.message); }
+    return iceCache || [];
+  }
+  return [];
+}
+app.get('/ice', async (_q, r) => { r.set('cache-control', 'no-store'); r.json({ iceServers: await turnServers() }); });
 const server = http.createServer(app);
 const io = new Server(server, { maxHttpBufferSize: 1e5 });
 
@@ -201,7 +220,12 @@ function view(r, p) {
   };
   return v;
 }
-function sync(r) { for (const p of everyone(r)) if (p.sid) io.to(p.sid).emit('state', view(r, p)); scheduleList(); }
+function sync(r) {
+  for (const p of everyone(r)) if (p.sid) {
+    try { io.to(p.sid).emit('state', view(r, p)); } catch (e) { console.error('[sync] vue impossible pour ' + p.name + ' :', e); }
+  }
+  scheduleList();
+}
 
 /* ---------- liste des parties publiques ---------- */
 function publicList() {
@@ -235,6 +259,7 @@ function setPhase(r, phase, secs, next) {
   r.deadline = secs ? Date.now() + secs * 1000 : 0;
   if (secs) r.timer = setTimeout(() => advance(r), secs * 1000);
   r.epoch = (r.epoch || 0) + 1;
+  r.phaseAt = Date.now();
   if (['discussion', 'night', 'end', 'lobby'].includes(phase)) r.aiPhase = 0;
   sync(r);
   botsOnPhase(r);
@@ -242,7 +267,35 @@ function setPhase(r, phase, secs, next) {
 function advance(r) {
   clearTimeout(r.timer);
   const n = r.next; r.next = null; r.deadline = 0;
-  if (n) n();
+  if (!n) return;
+  const ep = r.epoch;
+  try { n(); }
+  catch (e) {
+    console.error('[phase] erreur en sortant de « ' + r.phase + ' » :', e);
+    if (r.epoch === ep) recover(r);
+  }
+}
+/* filet de sécurité : si une transition plante, on force la phase suivante logique */
+function recover(r) {
+  const g = r.g, ph = r.phase;
+  console.warn('[phase] récupération depuis « ' + ph + ' » (salon ' + r.code + ')');
+  try {
+    if (!g || ph === 'lobby' || ph === 'end') return;
+    if (g.winner || checkWin(r)) return;
+    if (ph === 'intro') return beginNight(r);
+    if (ph === 'night') return endNight(r);
+    if (ph === 'tech') return afterTech(r);
+    if (ph === 'choice') return resolveNight(r);
+    if (ph === 'dawn') return beginDiscussion(r);
+    if (ph === 'discussion') return beginVote(r);
+    if (ph === 'vote') return endVote(r);
+    g.kamiPending = null; g.kamiQueue = [];
+    if (ph === 'kamikaze' && g.afterCont) { const c = g.afterCont; g.afterCont = null; return c(); }
+    r.day++; return beginNight(r);
+  } catch (e) {
+    console.error('[phase] récupération impossible, nouvelle nuit forcée :', e);
+    try { r.g.kamiQueue = []; r.g.kamiPending = null; r.day++; beginNight(r); } catch (e2) { console.error('[phase] échec définitif', e2); setPhase(r, 'end', 0, null); }
+  }
 }
 function shorten(r, secs) {
   if (r.deadline && r.deadline - Date.now() > secs * 1000) {
@@ -372,6 +425,7 @@ function kill(r, id, cause) {
 }
 function afterDeaths(r, cont) {
   const g = r.g;
+  g.afterCont = cont;
   if (g.kamiQueue.length) {
     const k = g.kamiQueue.shift();
     g.kamiPending = k;
@@ -1143,6 +1197,21 @@ io.on('connection', socket => {
   });
 
   /* l'hôte ajoute un joueur IA dans le salon */
+  socket.on('clientError', m => {
+    const now = Date.now();
+    if (now - (socket.data.errAt || 0) < 5000) return;
+    socket.data.errAt = now;
+    const c = ctx(socket);
+    console.error('[client]', c ? c.r.code + ' ' + c.r.phase : '-', String(m || '').slice(0, 600));
+  });
+  socket.on('resync', () => {
+    const c = ctx(socket); if (!c) return;
+    const now = Date.now();
+    if (now - (socket.data.syncAt || 0) < 3000) return;
+    socket.data.syncAt = now;
+    try { socket.emit('state', view(c.r, c.p)); } catch (e) { console.error('[sync]', e); }
+  });
+
   socket.on('addbot', () => {
     const c = ctx(socket); if (!c) return;
     const { r, p } = c;
@@ -1189,6 +1258,18 @@ io.on('connection', socket => {
   });
 });
 
+/* chien de garde : aucune partie ne doit rester figée après la fin de son minuteur */
+setInterval(() => {
+  const now = Date.now();
+  for (const r of rooms.values()) {
+    if (r.phase === 'lobby' || r.phase === 'end' || !r.g) continue;
+    if (r.deadline && now > r.deadline + 4000) { console.warn('[garde] minuteur dépassé en « ' + r.phase + ' » (salon ' + r.code + '), on avance'); r.next ? advance(r) : recover(r); }
+    else if (!r.deadline && now - (r.phaseAt || now) > 15000) { console.warn('[garde] phase sans minuteur « ' + r.phase + ' » (salon ' + r.code + ')'); recover(r); }
+  }
+}, 3000);
+process.on('uncaughtException', e => console.error('[erreur]', e));
+process.on('unhandledRejection', e => console.error('[erreur promesse]', e));
+
 /* nettoyage des salons abandonnés */
 setInterval(() => {
   const now = Date.now();
@@ -1199,4 +1280,5 @@ setInterval(() => {
   }
 }, 60000);
 
-server.listen(PORT, () => console.log(`MUTINY en ligne sur http://localhost:${PORT}` + (aiOn() ? ` — discussion IA activée (${AI_MODEL})` : ' — discussion IA désactivée (pas de ANTHROPIC_API_KEY)')));
+const turnOn = !!(process.env.TURN_ICE || process.env.TURN_URLS || process.env.TURN_API_URL);
+server.listen(PORT, () => console.log((turnOn ? '[vocal] relais TURN configuré\n' : '[vocal] pas de relais TURN : le vocal peut échouer entre certains réseaux\n') + `MUTINY en ligne sur http://localhost:${PORT}` + (aiOn() ? ` — discussion IA activée (${AI_MODEL})` : ' — discussion IA désactivée (pas de ANTHROPIC_API_KEY)')));
