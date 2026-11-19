@@ -151,12 +151,17 @@ html.stream .spoilwrap{position:relative}
 #peekBtn.hidden{display:none}
 .spl{filter:blur(6px);cursor:pointer;user-select:none;transition:filter .2s}
 .spl.open{filter:none}
-.scr{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
-.scr-brand{font:900 22px Orbitron,sans-serif;letter-spacing:.4em;opacity:.55}
-.scr-ico svg{width:min(34vh,260px);height:min(34vh,260px)}
-.scr-ph{font:900 clamp(40px,9vw,110px) Orbitron,sans-serif;letter-spacing:.12em;text-shadow:0 0 30px currentColor}
+.scr{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2vh}
+.scrboard{width:min(96vw,94vh)}
+.scrc{gap:4px}
+.scr-brand{font:900 clamp(10px,1.6vh,16px) Orbitron,sans-serif;letter-spacing:.4em;opacity:.55}
+.scr-ico svg{width:min(11vh,90px);height:min(11vh,90px)}
+.scr-ph{font:900 clamp(22px,6vh,64px) Orbitron,sans-serif;letter-spacing:.1em;text-shadow:0 0 30px currentColor;line-height:1.1}
 body.night .scr-ph{color:#ff3b5c}body.day .scr-ph{color:#ffc94d}
-.scr-t{font:700 clamp(30px,6vw,72px) Orbitron,sans-serif;min-height:1.2em}
+.scr-t{font:700 clamp(20px,5vh,54px) Orbitron,sans-serif;min-height:1.2em}
+.scr-sub{font:700 clamp(13px,2.4vh,24px) Orbitron,sans-serif;letter-spacing:.06em;opacity:.9}
+.scr-pr{font:600 clamp(14px,2.4vh,24px) Rajdhani,sans-serif;color:var(--accent);max-width:90%;line-height:1.25}
+.scr-cap{font:600 clamp(12px,1.9vh,18px) Rajdhani,sans-serif;color:var(--gold);margin-top:4px}
 .scr-back{position:fixed;right:14px;bottom:12px;background:transparent;border:1px solid #ffffff22;color:#ffffff55;border-radius:10px;padding:6px 12px;font:600 12px Rajdhani,sans-serif;cursor:pointer}
 .scr-back:hover{color:#fff;border-color:#fff8}
 .srow select{background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:600 15px Rajdhani}
@@ -401,10 +406,18 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 
 <section id="screen" class="hidden">
   <div class="scr">
-    <div class="scr-brand">MUTINY</div>
-    <div class="scr-ico" id="scrIco"></div>
-    <div class="scr-ph" id="scrPh"></div>
-    <div class="scr-t" id="scrT"></div>
+    <div class="board scrboard">
+      <div class="ring"></div><div class="ring r2"></div><div class="sweep"></div>
+      <div class="center scrc">
+        <div class="scr-brand">MUTINY</div>
+        <div class="scr-ico" id="scrIco"></div>
+        <div class="scr-ph" id="scrPh"></div>
+        <div class="scr-sub" id="scrSub"></div>
+        <div class="scr-t" id="scrT"></div>
+        <div class="scr-pr" id="scrPr"></div>
+      </div>
+      <div id="scrSeats"></div>
+    </div>
     <button class="scr-back" id="scrBack"></button>
   </div>
 </section>
@@ -852,6 +865,10 @@ const SX=k=>({
   back:LANG==='en'?'🎮 Play in this window again':'🎮 Rejouer dans cette fenêtre',
   wait:LANG==='en'?'WAITING':'EN ATTENTE',boot:LANG==='en'?'BOOT-UP':'ACTIVATION',
   day:LANG==='en'?'DAY':'JOUR',night:LANG==='en'?'NIGHT':'NUIT',
+  sNight:LANG==='en'?'The government network goes dark… some act in the shadows.':'Le réseau gouvernemental passe en veille… certains agissent dans l’ombre.',
+  sVote:LANG==='en'?'The swarm votes: who will be deactivated?':'L’essaim vote : qui sera désactivé\u00a0?',
+  sElect:LANG==='en'?'The units elect their captain (double vote).':'Les unités élisent leur chef d’équipage (vote double).',
+  sDisc:LANG==='en'?'Discussion':'Discussion',
   moved:LANG==='en'?'Control taken back by the main window.':'Le contrôle a été repris par la fenêtre principale.'
 })[k];
 function openCtrl(){
@@ -886,7 +903,29 @@ function renderScreen(){
   else if(v.phase==='intro')ph=SX('boot');
   else if(v.phase==='end'){ph=v.winner==='e'?t('winE'):t('winV');ico='';}
   else ph=(['night','tech','choice'].includes(v.phase)?SX('night'):SX('day'))+' '+v.day;
+  const nm=id=>((v.players||[]).find(p=>p.id===id)||{}).name||'?';
+  const SUB={dawn:t('dawnTitle'),discussion:SX('sDisc'),vote:t('voteTitle'),result:t('resultTitle'),election:t('electTitle'),succession:t('succTitle'),kamikaze:t('kamiTitle')};
+  const PR={intro:t('introPrompt'),night:SX('sNight'),tech:t('techWait'),choice:t('choiceWait'),dawn:t('dawnPrompt'),discussion:t('discPrompt'),vote:SX('sVote'),result:t('resultPrompt'),
+    election:SX('sElect'),succession:t('succWait',{x:nm(v.succ)}),kamikaze:t('kamiWait',{x:nm(v.kami)})};
   $('#scrIco').innerHTML=ico;$('#scrPh').textContent=ph;$('#scrBack').textContent=SX('back');
+  $('#scrSub').textContent=SUB[v.phase]||'';
+  $('#scrPr').innerHTML=esc(PR[v.phase]||'')+(v.captain&&!['lobby','end','election','succession'].includes(v.phase)?`<div class="scr-cap">${esc(t('capNote',{x:nm(v.captain)}))}</div>`:'');
+  const pl=v.players||[],n=pl.length,cnt={};
+  Object.values(v.votes||{}).forEach(id=>cnt[id]=(cnt[id]||0)+1);
+  $('#scrSeats').innerHTML=pl.map((p,i)=>{
+    const ang=(90+i*360/n)*Math.PI/180,x=50+43*Math.cos(ang),y=50+43*Math.sin(ang);
+    const col=rColor(p.role,p.awake);
+    return `<div class="seat ${p.alive?'alive':'dead'} ${p.connected?'':'off'}" style="left:${x}%;top:${y}%">
+      <div class="ava">${droneSVG(p.color,p.awake?RED:'#7fe9ff',!p.alive,true,p.look)}
+        ${cnt[p.id]?`<div class="vb">${cnt[p.id]}</div>`:''}
+        ${v.captain===p.id?'<div class="capb">🎖️</div>':''}
+        ${p.voice?'<div class="mic">🎙</div>':''}
+        ${p.bot?'<div class="botb">🤖</div>':''}
+      </div>
+      <div class="nm">${esc(p.name)}</div>
+      ${p.role?`<div class="rt" style="background:${col}22;color:${col};border:1px solid ${col}55">${esc(rLabel(p.role,p.awake))}</div>`:''}
+    </div>`;
+  }).join('');
   scrTick();
 }
 function scrTick(){
