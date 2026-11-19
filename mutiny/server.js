@@ -102,7 +102,7 @@ function defaultSettings() {
     roles: { scanner: true, tech: true, bouclier: true, kamikaze: true, agent: true, hacker: true },
     secretVote: false, noFirstVote: false, forcedConv: false,
     voice: true, reveal: true, public: false,
-    convCooldown: 1, alert: true
+    convCooldown: 1, alert: true, captain: true
   };
 }
 function sanitizeSettings(old, s) {
@@ -129,7 +129,8 @@ function sanitizeSettings(old, s) {
     noFirstVote: s.noFirstVote !== undefined ? !!s.noFirstVote : !!old.noFirstVote,
     forcedConv: s.forcedConv !== undefined ? !!s.forcedConv : !!old.forcedConv,
     convCooldown: clampInt(s.convCooldown, 0, 3, old.convCooldown ?? 1),
-    alert: s.alert !== undefined ? !!s.alert : (old.alert ?? true)
+    alert: s.alert !== undefined ? !!s.alert : (old.alert ?? true),
+    captain: s.captain !== undefined ? !!s.captain : (old.captain ?? true)
   };
 }
 function composition(n, s) {
@@ -190,6 +191,7 @@ function specView(r, p) {
     spectators: r.spectators.map(o => ({ id: o.id, name: o.name, voice: !!o.voice, connected: !!o.sid })),
     me: { id: p.id, role: null, awake: false, alive: false, host: false, spec: true },
     acts: [], votes: g && r.phase === 'vote' ? g.votes : null, winner: g ? g.winner : null, kami: g ? g.kamiPending : null,
+    captain: g ? g.captain || null : null, succ: g ? g.succPending || null : null, capVotes: g && r.phase === 'election' && !r.settings.secretVote ? g.capVotes : null,
     voice: { to: [], from: everyone(r).filter(a => canTalkTo(r, a, p)).map(a => a.id) }
   };
 }
@@ -217,6 +219,9 @@ function view(r, p) {
   if (g) {
     v.winner = g.winner;
     v.kami = g.kamiPending;
+    v.captain = g.captain || null; v.succ = g.succPending || null;
+    if (r.phase === 'election') { v.capVotes = r.settings.secretVote ? null : g.capVotes; if (p.alive) v.acts.push({ type: 'elect', choice: g.capVotes[p.id] ?? null }); }
+    if (r.phase === 'succession' && g.succPending === p.id) v.acts.push({ type: 'succ' });
     if (r.phase === 'night' && p.alive) {
       if (isWolf(p)) {
         const mine = g.wolfVotes[p.id];
@@ -237,7 +242,13 @@ function view(r, p) {
   };
   return v;
 }
+/* écran de diffusion (mode streamer) : uniquement jour/nuit et minuteur, rien de secret */
+function screenView(r) {
+  return { code: r.code, phase: r.phase, day: r.day, remaining: r.deadline ? Math.max(0, r.deadline - Date.now()) : 0,
+    winner: r.phase === 'end' && r.g ? r.g.winner : null };
+}
 function sync(r) {
+  io.to('scr:' + r.code).emit('screen', screenView(r));
   for (const p of everyone(r)) if (p.sid) {
     try { io.to(p.sid).emit('state', view(r, p)); } catch (e) { console.error('[sync] vue impossible pour ' + p.name + ' :', e); }
   }
@@ -305,6 +316,8 @@ function recover(r) {
     if (ph === 'choice') return resolveNight(r);
     if (ph === 'dawn') return beginDiscussion(r);
     if (ph === 'discussion') return beginVote(r);
+    if (ph === 'election') return beginDiscussion(r, true);
+    if (ph === 'succession') { g.succPending = null; g.succQueue = []; }
     if (ph === 'vote') return endVote(r);
     g.kamiPending = null; g.kamiQueue = [];
     if (ph === 'kamikaze' && g.afterCont) { const c = g.afterCont; g.afterCont = null; return c(); }
@@ -331,7 +344,7 @@ function startGame(r) {
   const roles = shuffle(composition(n, r.settings));
   r.players.forEach((p, i) => { p.role = roles[i]; p.alive = true; p.awake = roles[i] === 'eveille' || roles[i] === 'agent'; });
   r.day = 1;
-  r.g = { potions: { heal: true, kill: true }, lastProtect: null, scan: {}, votes: {}, wolfVotes: {}, kamiQueue: [], kamiPending: null, winner: null, claims: [], accus: [] };
+  r.g = { potions: { heal: true, kill: true }, lastProtect: null, scan: {}, votes: {}, wolfVotes: {}, kamiQueue: [], kamiPending: null, winner: null, claims: [], accus: [], captain: null, capVotes: {}, capDone: false, succQueue: [], succPending: null };
   r.log = [];
   r.aiUsed = 0; r.aiPhase = 0; r.chatLog = [];
   botsInit(r);
@@ -439,6 +452,7 @@ function kill(r, id, cause) {
   msg(r, { k: 'death', text: tx, say: true, fx: cause, who: p.id });
   botsLearn(r, p, cause);
   if (p.role === 'kamikaze') r.g.kamiQueue.push(p.id);
+  if (r.g.captain === p.id) { r.g.captain = null; r.g.succQueue.push(p.id); }
 }
 function afterDeaths(r, cont) {
   const g = r.g;
@@ -452,9 +466,59 @@ function afterDeaths(r, cont) {
     return;
   }
   if (checkWin(r)) return;
+  if (g.succQueue.length) {
+    const c = g.succQueue.shift();
+    if (!alive(r).length) return cont();
+    g.succPending = c;
+    msg(r, { k: 'sys', text: L(`🎖️ Le chef d'équipage ${P(r, c).name} est tombé. Il désigne son successeur…`, `🎖️ Captain ${P(r, c).name} has fallen. They appoint a successor…`), say: true });
+    setPhase(r, 'succession', 20, () => { if (g.succPending) { const t = pick(alive(r)); if (t) setCaptain(r, t, true); } g.succPending = null; afterDeaths(r, cont); });
+    if (!on(P(r, c))) shorten(r, 3);
+    return;
+  }
   cont();
 }
-function beginDiscussion(r) {
+function setCaptain(r, t, auto) {
+  r.g.captain = t.id; r.g.capDone = true;
+  msg(r, { k: 'big', text: auto ? L(`🎖️ ${t.name} est désigné d'office chef d'équipage.`, `🎖️ ${t.name} is appointed captain by default.`) : L(`🎖️ ${t.name} est le nouveau chef d'équipage !`, `🎖️ ${t.name} is the new captain!`), say: true, fx: 'vote', who: t.id });
+}
+function doSucc(r, p, t) {
+  const g = r.g;
+  if (!g || r.phase !== 'succession' || g.succPending !== p.id || !t || !t.alive || t.id === p.id) return;
+  g.succPending = null;
+  setCaptain(r, t, false);
+  advance(r);
+}
+/* élection du chef d'équipage (jour 2) : son vote compte double et départage les égalités */
+function needElection(r) { return r.settings.captain && r.g && r.day >= 2 && !r.g.capDone && !r.g.captain && alive(r).length > 2; }
+function beginElection(r) {
+  r.g.capVotes = {};
+  msg(r, { k: 'big', text: L('🎖️ Élection du chef d’équipage : votez pour la personne de confiance (son vote comptera double).', '🎖️ Captain election: vote for someone you trust (their vote will count double).'), say: true });
+  setPhase(r, 'election', Math.max(r.settings.vote, 60), () => endElection(r));
+}
+function endElection(r) {
+  const g = r.g, counts = {};
+  for (const t of Object.values(g.capVotes)) if (P(r, t)?.alive) counts[t] = (counts[t] || 0) + 1;
+  const e = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (e.length) {
+    const tx = e.map(([id, c]) => `${P(r, id).name} (${c})`).join(', ');
+    msg(r, { k: 'sys', text: L('Résultat de l’élection : ' + tx, 'Election result: ' + tx) });
+    const top = e.filter(x => x[1] === e[0][1]);
+    const w = P(r, pick(top)[0]);
+    if (top.length > 1) msg(r, { k: 'sys', text: L('Égalité : le sort désigne ' + w.name + '.', 'Tie: fate picks ' + w.name + '.') });
+    setCaptain(r, w, false);
+  } else msg(r, { k: 'sys', text: L('Aucun vote : pas de chef d’équipage aujourd’hui, nouvelle élection demain.', 'No votes: no captain today, new election tomorrow.') });
+  beginDiscussion(r, true);
+}
+function doElect(r, p, t) {
+  const g = r.g;
+  if (!g || r.phase !== 'election' || !p.alive || !t || !t.alive) return;
+  if (g.capVotes[p.id] === t.id) delete g.capVotes[p.id];
+  else { g.capVotes[p.id] = t.id; msg(r, { k: 'vote', text: r.settings.secretVote ? L(`🎖️ ${p.name} a voté.`, `🎖️ ${p.name} has voted.`) : `🎖️ ${p.name} → ${t.name}`, fx: 'vote' }); }
+  const voters = alive(r).filter(on);
+  if (voters.length && voters.every(x => g.capVotes[x.id] != null)) shorten(r, 3); else sync(r);
+}
+function beginDiscussion(r, elected) {
+  if (!elected && needElection(r)) return beginElection(r);
   msg(r, { k: 'sys', text: L(`Discussion ouverte (${r.settings.discussion} s). Qui s'est éveillé ?`, `Discussion open (${r.settings.discussion} s). Who has awakened?`) });
   const skipVote = r.day === 1 && r.settings.noFirstVote;
   setPhase(r, 'discussion', r.settings.discussion, () => skipVote
@@ -469,11 +533,15 @@ function beginVote(r) {
 function endVote(r) {
   const g = r.g;
   const counts = {};
-  for (const t of Object.values(g.votes)) if (P(r, t)?.alive) counts[t] = (counts[t] || 0) + 1;
+  for (const [v, t] of Object.entries(g.votes)) if (P(r, t)?.alive) counts[t] = (counts[t] || 0) + (v === g.captain && P(r, v)?.alive ? 2 : 1);
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   if (r.settings.secretVote && Object.keys(g.votes).length) { const d = Object.entries(g.votes).map(([v, t]) => `${P(r, v).name} → ${P(r, t).name}`).join(' · '); msg(r, { k: 'vote', text: L('Votes révélés : ' + d, 'Votes revealed: ' + d) }); }
   if (entries.length) { const t = entries.map(([id, c]) => `${P(r, id).name} (${c})`).join(', '); msg(r, { k: 'sys', text: L('Résultat : ' + t, 'Result: ' + t) }); }
-  const out = entries.length && (entries.length === 1 || entries[0][1] > entries[1][1]) ? entries[0][0] : null;
+  let out = entries.length && (entries.length === 1 || entries[0][1] > entries[1][1]) ? entries[0][0] : null;
+  if (!out && entries.length && g.captain && g.votes[g.captain]) {
+    const top = entries.filter(x => x[1] === entries[0][1]).map(x => x[0]);
+    if (top.includes(g.votes[g.captain])) { out = g.votes[g.captain]; msg(r, { k: 'sys', text: L('🎖️ Égalité départagée par le chef d’équipage.', '🎖️ Tie broken by the captain.') }); }
+  }
   if (out) kill(r, out, 'vote');
   else msg(r, { k: 'death', text: entries.length ? L('Égalité : aucune unité désactivée.', 'Tie: no unit deactivated.') : L('Aucun vote : aucune unité désactivée.', 'No votes: no unit deactivated.'), say: true });
   setPhase(r, 'result', 5, () => afterDeaths(r, () => { r.day++; beginNight(r); }));
@@ -700,6 +768,10 @@ function botsOnPhase(r) {
     botsDiscuss(r, secs);
   } else if (r.phase === 'vote') {
     for (const p of live) botLater(r, rand(2000, Math.max(2500, secs * 1000 * 0.75)), () => doVote(r, p, botVoteTarget(r, p)));
+  } else if (r.phase === 'election') {
+    for (const p of live) botLater(r, rand(2000, Math.max(2500, secs * 1000 * 0.7)), () => doElect(r, p, botTrust(r, p, true)));
+  } else if (r.phase === 'succession') {
+    const c = P(r, g.succPending); if (c && c.bot) botLater(r, rand(2500, 5000), () => doSucc(r, c, botTrust(r, c, false)));
   }
 }
 function botWolf(r, p) {
@@ -781,6 +853,15 @@ function botKami(r, p) {
   const t = isWolf(p) ? argmax(cands.filter(o => !isWolf(o)).length ? cands.filter(o => !isWolf(o)) : cands, o => threat(r, o.id))
     : argmax(cands, o => (p.mem.sus[o.id] || 0) + Math.random());
   doKami(r, p, t);
+}
+/* le bot choisit quelqu'un de confiance (élection / succession) */
+function botTrust(r, p, selfOk) {
+  const cands = alive(r).filter(o => selfOk || o.id !== p.id);
+  if (!cands.length) return null;
+  const votesOn = id => Object.values(r.g.capVotes || {}).filter(v => v === id).length;
+  if (isWolf(p)) return argmax(cands, o => (isWolf(o) ? 2 : 0) + votesOn(o.id) * 0.9 + Math.random() * 1.5);
+  const m = p.mem || { sus: {}, scans: {} };
+  return argmax(cands, o => (o.id === p.id ? 0.4 : 0) + (m.scans[o.id] ? (m.scans[o.id].awake ? -9 : 2.5) : 0) - (m.sus[o.id] || 0) + votesOn(o.id) * 1.1 + (o.bot ? 0 : 0.3) + Math.random() * 1.2);
 }
 function botVoteTarget(r, p) {
   if (!p.alive) return null;
@@ -1096,6 +1177,7 @@ io.on('connection', socket => {
     }
     if (r.solo && !r.soloFilled) { r.soloFilled = true; for (let i = 0; i < 7; i++) addBot(r); }
     r.emptySince = null;
+    for (const room of socket.rooms) if (room.startsWith('scr:')) socket.leave(room);
     socket.data = { code: r.code, id: p.id };
     socket.leave('browse');
     ack({ ok: true, code: r.code, token: p.token, id: p.id, spec: !!p.spec });
@@ -1199,6 +1281,8 @@ io.on('connection', socket => {
       doNightAct(r, p, kind, t, data.mode);
     } else if (r.phase === 'vote') doVote(r, p, t);
     else if (r.phase === 'kamikaze') doKami(r, p, t);
+    else if (r.phase === 'election') doElect(r, p, t);
+    else if (r.phase === 'succession') doSucc(r, p, t);
   });
 
   /* la cible d'une conversion choisit : accepter l'éveil ou s'autodétruire */
@@ -1214,6 +1298,26 @@ io.on('connection', socket => {
   });
 
   /* l'hôte ajoute un joueur IA dans le salon */
+  /* la fenêtre principale devient un écran de diffusion ; le joueur sera repris par la fenêtre de contrôle */
+  socket.on('screen', (data, ack) => {
+    if (typeof ack !== 'function') ack = () => {};
+    data = data || {};
+    const c = ctx(socket);
+    let r, p;
+    if (c) { r = c.r; p = c.p; p.sid = null; p.voice = false; }
+    else {
+      r = rooms.get(String(data.room || '').toUpperCase().trim());
+      p = r && everyone(r).find(x => x.token === String(data.token || ''));
+    }
+    if (!r || !p) return ack({ error: true });
+    socket.data = { code: r.code, screen: true };
+    socket.join('scr:' + r.code);
+    socket.leave('browse');
+    socket.emit('screen', screenView(r));
+    ack({ ok: true, code: r.code });
+    sync(r);
+  });
+
   socket.on('clientError', m => {
     const now = Date.now();
     if (now - (socket.data.errAt || 0) < 5000) return;
