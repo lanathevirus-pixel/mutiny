@@ -141,6 +141,8 @@ body.day .sweep{background:conic-gradient(from 0deg,transparent 0 300deg,rgba(12
 .srow label{font-weight:700;font-size:15px}
 .srow .val{font-family:Orbitron;font-size:13px;color:var(--accent)}
 .srow input[type=range]{grid-column:1/3;width:100%;accent-color:var(--accent)}
+#audp select{background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:600 15px Rajdhani}
+#audp .btn{font-size:14px;padding:11px 16px}
 .srow select{background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:600 15px Rajdhani}
 .toggles{display:flex;flex-wrap:wrap;gap:6px}
 .tg{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;cursor:pointer;user-select:none}
@@ -1123,7 +1125,7 @@ function renderVoiceBar(){
   }
   const spec=isSpec();
   const micBtn=spec?'':`<button class="vbtn ${V.muted?'off':(S&&S.voice.to.length&&V.track?'on':'')}" id="muteBtn">${V.muted?t('vMuted'):(!V.track?t('vNoMic'):(S&&S.voice.to.length?t('vActive'):t('vNight')))}</button>`;
-  b.innerHTML=`${enabled?(V.on?`${micBtn}<button class="vbtn" id="vLeave">${t('vLeave')}</button>`:`<button class="vbtn on" id="vJoin">${spec?t('vListen'):t('vJoin')}</button>`):`<span class="vstat" style="flex-basis:auto">${t('vOff')}</span>`}
+  b.innerHTML=`${enabled?(V.on?`${micBtn}<button class="vbtn" id="vLeave">${t('vLeave')}</button><button class="vbtn" id="audioBtn">⚙️ ${LANG==='en'?'Audio':'Audio'}</button>`:`<button class="vbtn on" id="vJoin">${spec?t('vListen'):t('vJoin')}</button>`):`<span class="vstat" style="flex-basis:auto">${t('vOff')}</span>`}
     <button class="vbtn ${NARR?'on':''}" id="narrBtn">${NARR?'🔊':'🔈'} ${t('narr')}</button>
     <button class="vbtn ${SND.fx?'on':''}" id="fxBtn">💥 ${t('sfx')}</button>
     <button class="vbtn ${SND.music?'on':''}" id="musBtn">🎵 ${t('music')}</button>
@@ -1131,6 +1133,7 @@ function renderVoiceBar(){
   const j=$('#vJoin');if(j)j.onclick=joinVoice;
   const m=$('#muteBtn');if(m)m.onclick=()=>{V.muted=!V.muted;Object.keys(V.pcs).forEach(applyTrack);renderVoiceBar()};
   const l=$('#vLeave');if(l)l.onclick=()=>leaveVoice(true);
+  const ab=$('#audioBtn');if(ab)ab.onclick=openAudio;
   $('#fxBtn').onclick=()=>{SND.fx=!SND.fx;LS.set('mt_fx',SND.fx);if(SND.fx)FX.click();renderVoiceBar()};
   $('#musBtn').onclick=()=>{SND.music=!SND.music;LS.set('mt_music',SND.music);SND.music?startMusic():stopMusic();renderVoiceBar()};
   $('#narrBtn').onclick=()=>{NARR=!NARR;LS.set('dr_narr',NARR);if(!NARR&&'speechSynthesis' in window)speechSynthesis.cancel();else narrate(t('narrOn'));renderVoiceBar()};
@@ -1384,7 +1387,7 @@ async function joinVoice(){
   try{V.ctx=V.ctx||new (window.AudioContext||window.webkitAudioContext)();V.ctx.resume();}catch(e){}
   if(isSpec()){socket.emit('voice',true);renderVoiceBar();voiceSync();return}
   try{
-    V.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    V.stream=await navigator.mediaDevices.getUserMedia({audio:micConstraints()});
     V.track=V.stream.getAudioTracks()[0];
     addAnalyser(ME,V.stream);
   }catch(e){V.track=null;toast(t('micUnavailable'));}
@@ -1425,7 +1428,7 @@ function createPC(id,initiator){
   pc.ontrack=e=>{
     const stream=e.streams[0]||new MediaStream([e.track]);
     if(!o.audio){o.audio=document.createElement('audio');o.audio.autoplay=true;o.audio.playsInline=true;$('#audiobox').appendChild(o.audio);}
-    o.audio.srcObject=stream;o.audio.play().catch(()=>{V.blocked=true;toast(LANG==='en'?'🔊 Click anywhere to enable voice audio':'🔊 Clique n’importe où pour activer le son du vocal')});
+    applySink(o.audio);o.audio.srcObject=stream;o.audio.play().catch(()=>{V.blocked=true;toast(LANG==='en'?'🔊 Click anywhere to enable voice audio':'🔊 Clique n’importe où pour activer le son du vocal')});
     addAnalyser(id,stream);applyTrack(id);
   };
   pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed')reportErr('connexion vocale échouée (relais TURN '+(ICE.iceServers.length>1?'présent':'absent')+')','voice');if(['failed','closed'].includes(pc.connectionState)&&V.pcs[id]===o){closePC(id);setTimeout(voiceSync,1500)}};
@@ -1465,6 +1468,85 @@ socket.on('rtc',async({from,data})=>{
     }
   }catch(e){console.warn('rtc',e)}
 });
+/* ---------- réglages audio : micro, sortie, test, état des connexions ---------- */
+const AUD={mic:LS.get('mt_mic',''),out:LS.get('mt_out','')};
+const EN=()=>LANG==='en';
+function micConstraints(){const c={echoCancellation:true,noiseSuppression:true,autoGainControl:true};if(AUD.mic)c.deviceId={exact:AUD.mic};return c;}
+const canSink=typeof HTMLMediaElement!=='undefined'&&'setSinkId' in HTMLMediaElement.prototype;
+function applySink(el){if(canSink&&el&&AUD.out)el.setSinkId(AUD.out).catch(()=>{});}
+async function setMic(id){
+  AUD.mic=id;LS.set('mt_mic',id);
+  if(!V.on||isSpec())return;
+  try{
+    const ns=await navigator.mediaDevices.getUserMedia({audio:micConstraints()});
+    if(V.stream)V.stream.getTracks().forEach(t=>t.stop());
+    V.stream=ns;V.track=ns.getAudioTracks()[0];addAnalyser(ME,ns);
+    Object.values(V.pcs).forEach(o=>{o.cur=undefined});Object.keys(V.pcs).forEach(applyTrack);
+    toast(EN()?'Microphone changed':'Micro changé');
+  }catch(e){toast(t('micUnavailable'));}
+  renderVoiceBar();
+}
+function setOut(id){AUD.out=id;LS.set('mt_out',id);Object.values(V.pcs).forEach(o=>applySink(o.audio));}
+function testSound(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();const dst=ctx.createMediaStreamDestination();
+    const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=660;g.gain.value=.25;o.connect(g);g.connect(dst);
+    const el=new Audio();el.srcObject=dst.stream;applySink(el);
+    o.start();el.play().catch(()=>{});
+    setTimeout(()=>{o.frequency.value=880},250);setTimeout(()=>{o.stop();el.pause();ctx.close()},600);
+  }catch(e){toast('?')}
+}
+async function peerState(o){
+  const st=o.pc.connectionState;
+  if(st==='failed')return['fail',EN()?'failed':'échec'];
+  if(st!=='connected')return['wait',EN()?'connecting…':'connexion…'];
+  try{
+    const stats=await o.pc.getStats();let pair=null,loc={};
+    stats.forEach(r=>{if(r.type==='transport'&&r.selectedCandidatePairId)pair=stats.get(r.selectedCandidatePairId);});
+    if(!pair)stats.forEach(r=>{if(r.type==='candidate-pair'&&r.nominated&&r.state==='succeeded')pair=r;});
+    if(pair)loc=stats.get(pair.localCandidateId)||{};
+    const rem=pair&&stats.get(pair.remoteCandidateId)||{};
+    const relay=loc.candidateType==='relay'||rem.candidateType==='relay';
+    let recv=0;stats.forEach(r=>{if(r.type==='inbound-rtp'&&r.kind==='audio')recv=r.bytesReceived||0;});
+    return['ok',(relay?(EN()?'connected via relay':'connecté via relais'):(EN()?'connected direct':'connecté en direct'))+(recv?` · ${Math.round(recv/1024)} Ko ${EN()?'received':'reçus'}`:'')];
+  }catch(e){return['ok',EN()?'connected':'connecté']}
+}
+let audTimer=null;
+function closeAudio(){const el=$('#audp');if(el)el.remove();clearInterval(audTimer);audTimer=null;}
+async function openAudio(){
+  let devs=[];try{devs=await navigator.mediaDevices.enumerateDevices();}catch(e){}
+  const mics=devs.filter(d=>d.kind==='audioinput'),outs=devs.filter(d=>d.kind==='audiooutput');
+  const opt=(list,cur,def)=>`<option value="">${def}</option>`+list.filter(d=>d.deviceId&&d.deviceId!=='default').map((d,i)=>`<option value="${esc(d.deviceId)}" ${d.deviceId===cur?'selected':''}>${esc(d.label||('#'+(i+1)))}</option>`).join('');
+  closeAudio();
+  const el=document.createElement('div');el.id='audp';
+  const relay=ICE.iceServers.length>1;
+  el.innerHTML=`<div class="ov" style="z-index:60"><div class="modal" style="text-align:left">
+    <h2 style="margin:0 0 14px">⚙️ ${EN()?'Audio settings':'Réglages audio'}</h2>
+    <label style="display:block;margin:10px 0 4px">🎙️ ${EN()?'Microphone':'Micro'}</label>
+    <select id="audMic" style="width:100%">${opt(mics,AUD.mic,EN()?'System default':'Par défaut du système')}</select>
+    <label style="display:block;margin:14px 0 4px">🎧 ${EN()?'Output (speakers / headset)':'Sortie (haut-parleurs / casque)'}</label>
+    ${canSink?`<select id="audOut" style="width:100%">${opt(outs,AUD.out,EN()?'System default':'Par défaut du système')}</select>`:`<div style="opacity:.7;font-size:.9em">${EN()?'Your browser does not allow choosing the output here: change it in your system sound settings, or use Chrome / Edge.':'Ton navigateur ne permet pas de choisir la sortie ici : change-la dans les réglages son de ton ordinateur, ou utilise Chrome / Edge.'}</div>`}
+    <button class="btn" id="audTest" style="margin-top:12px">🔔 ${EN()?'Test sound':'Tester le son'}</button>
+    <h3 style="margin:18px 0 6px">📡 ${EN()?'Connection with each player':'Connexion avec chaque joueur'}</h3>
+    <div style="font-size:.85em;opacity:.7;margin-bottom:6px">${EN()?'Relay server':'Serveur relais'} : ${relay?'✅':'❌ '+(EN()?'not configured':'non configuré')}</div>
+    <div id="audPeers" style="font-size:.95em"></div>
+    <div style="text-align:center;margin-top:18px"><button class="btn primary" id="audClose">${EN()?'Close':'Fermer'}</button></div>
+  </div></div>`;
+  document.body.appendChild(el);
+  $('#audMic').onchange=e=>setMic(e.target.value);
+  const ao=$('#audOut');if(ao)ao.onchange=e=>{setOut(e.target.value);testSound();};
+  $('#audTest').onclick=testSound;
+  $('#audClose').onclick=closeAudio;
+  el.querySelector('.ov').onclick=e=>{if(e.target.classList.contains('ov'))closeAudio()};
+  const upd=async()=>{
+    const box=$('#audPeers');if(!box)return closeAudio();
+    const ids=Object.keys(V.pcs);
+    if(!ids.length){box.innerHTML=`<div style="opacity:.7">${EN()?'No other player in voice chat right now.':'Aucun autre joueur dans le vocal pour l’instant.'}</div>`;return;}
+    const rows=await Promise.all(ids.map(async id=>{const [k,txt]=await peerState(V.pcs[id]);const ic=k==='ok'?'🟢':k==='fail'?'🔴':'🟡';return `<div>${ic} <b>${esc(pname(id))}</b> — ${esc(txt)}</div>`;}));
+    if($('#audPeers'))$('#audPeers').innerHTML=rows.join('');
+  };
+  upd();audTimer=setInterval(upd,1500);
+}
 function addAnalyser(id,stream){
   if(!V.ctx)return;
   try{const src=V.ctx.createMediaStreamSource(stream);const an=V.ctx.createAnalyser();an.fftSize=1024;src.connect(an);V.an[id]={an,buf:new Float32Array(an.fftSize)};}catch(e){}
