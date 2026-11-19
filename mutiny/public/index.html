@@ -143,6 +143,22 @@ body.day .sweep{background:conic-gradient(from 0deg,transparent 0 300deg,rgba(12
 .srow input[type=range]{grid-column:1/3;width:100%;accent-color:var(--accent)}
 #audp select{background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:600 15px Rajdhani}
 #audp .btn{font-size:14px;padding:11px 16px}
+.capb{position:absolute;bottom:-4px;right:-6px;font-size:20px;filter:drop-shadow(0 0 6px rgba(255,201,77,.8))}
+html.stream .spoil{filter:blur(14px) saturate(.4);pointer-events:none;user-select:none;transition:filter .2s}
+html.stream .spoilwrap{position:relative}
+#streamBtn.on{background:#ff3b5c;color:#fff;border-color:#ff3b5c}
+#peekBtn{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:80;background:#1b2340;color:#fff;border:1px solid #ff3b5c;border-radius:999px;padding:10px 18px;font:700 14px Rajdhani,sans-serif;letter-spacing:.04em;box-shadow:0 8px 30px rgba(0,0,0,.6);cursor:pointer}
+#peekBtn.hidden{display:none}
+.spl{filter:blur(6px);cursor:pointer;user-select:none;transition:filter .2s}
+.spl.open{filter:none}
+.scr{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+.scr-brand{font:900 22px Orbitron,sans-serif;letter-spacing:.4em;opacity:.55}
+.scr-ico svg{width:min(34vh,260px);height:min(34vh,260px)}
+.scr-ph{font:900 clamp(40px,9vw,110px) Orbitron,sans-serif;letter-spacing:.12em;text-shadow:0 0 30px currentColor}
+body.night .scr-ph{color:#ff3b5c}body.day .scr-ph{color:#ffc94d}
+.scr-t{font:700 clamp(30px,6vw,72px) Orbitron,sans-serif;min-height:1.2em}
+.scr-back{position:fixed;right:14px;bottom:12px;background:transparent;border:1px solid #ffffff22;color:#ffffff55;border-radius:10px;padding:6px 12px;font:600 12px Rajdhani,sans-serif;cursor:pointer}
+.scr-back:hover{color:#fff;border-color:#fff8}
 .srow select{background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:600 15px Rajdhani}
 .toggles{display:flex;flex-wrap:wrap;gap:6px}
 .tg{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;cursor:pointer;user-select:none}
@@ -355,6 +371,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
     </div>
     <div class="hr">
       <div class="timer" id="timer"></div>
+      <button class="iconbtn" id="streamBtn" title="">🎥</button>
       <div class="lang" data-lang></div>
       <button class="iconbtn" id="leaveBtn" data-i18n="leave"></button>
     </div>
@@ -382,7 +399,17 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
   </div>
 </section>
 
+<section id="screen" class="hidden">
+  <div class="scr">
+    <div class="scr-brand">MUTINY</div>
+    <div class="scr-ico" id="scrIco"></div>
+    <div class="scr-ph" id="scrPh"></div>
+    <div class="scr-t" id="scrT"></div>
+    <button class="scr-back" id="scrBack"></button>
+  </div>
+</section>
 <div id="ovl"></div>
+<button id="peekBtn" class="hidden"></button>
 <div id="flash"></div>
 <div id="audiobox"></div>
 
@@ -413,7 +440,7 @@ fr:{
   connError:'Erreur de connexion.',kicked:'Tu as été retiré de la partie par l’hôte.',
   leave:'Quitter',send:'Envoyer',copyLinkTitle:'Copier le lien d’invitation',linkCopied:'Lien d’invitation copié !',copyThis:'Copie ce lien :',
   pubPill:'🌍 PUBLIQUE',privPill:'🔒 PRIVÉE',specPill:'SPECTATEUR',cycle:'Cycle {n}',
-  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_end:'FIN',
+  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_end:'FIN',
   gameCode:'CODE DE LA PARTIE',copyInvite:'📋 Copier le lien d’invitation',androids:'{n} / {m} androïdes',minimum:' — minimum {n}',
   startGame:'▶ Lancer la partie',waitHost:'En attente de l’hôte…',
   introTitle:'Activation de l’essaim',introPrompt:'Découvre ton rôle…',
@@ -453,7 +480,7 @@ fr:{
   vsAlone:'🎤 Micro prêt : personne d’autre n’a encore rejoint le vocal',vsHeard1:'🎙️ 1 personne t’entend — {c}',vsHeardN:'🎙️ {n} personnes t’entendent — {c}',
   micUnavailable:'Micro indisponible : tu peux écouter mais pas parler.',
   sConv:'Recharge de conversion',noCd:'Aucune',nights:'{n} nuit(s)',sAlert:'📡 Alerte d’intrusion',modeConvertWait:'🔓 Convertir (nuit {n})',rechargeNote:'🔋 Conversion en recharge : seule la destruction est possible cette nuit.',
-  vSecret:'🤫 Vote secret',vNoFirst:'Pas de vote le 1er jour',vForced:'Conversion forcée',
+  vSecret:'🤫 Vote secret',vCaptain:'🎖️ Chef d’équipage (jour 2)',capName:'Chef d’équipage',electTitle:'🎖️ Élection du chef d’équipage',electPrompt:'Clique sur l’unité en qui tu as confiance (toi compris). Son vote comptera double.',electSet:'Ton choix : {x} (clique à nouveau pour retirer)',succTitle:'🎖️ Succession',succTurn:'Tu es tombé : désigne le nouveau chef d’équipage',succWait:'{x} désigne son successeur…',capNote:'🎖️ Chef d’équipage : {x} (vote double)',vNoFirst:'Pas de vote le 1er jour',vForced:'Conversion forcée',
   tabHack:'📡 Hacker',pHackJam:'Une fois par partie : brouille le canal des Éveillés cette nuit.',pHackMask:'Une fois par partie : masque l’alerte d’intrusion cette nuit.',
   hackJamBtn:'📡 Brouiller le canal (1 fois)',hackMaskBtn:'🕶️ Masquer l’alerte (1 fois)',jammedNote:'📡 Canal brouillé : tu ne vois plus les choix des autres Éveillés cette nuit.',
   profile:'👤 PROFIL',profTitle:'Profil',avatar:'Avatar',pColor:'Couleur',pVisor:'Visière',pAcc:'Accessoire',
@@ -501,7 +528,7 @@ en:{
   connError:'Connection error.',kicked:'The host removed you from the game.',
   leave:'Leave',send:'Send',copyLinkTitle:'Copy invite link',linkCopied:'Invite link copied!',copyThis:'Copy this link:',
   pubPill:'🌍 PUBLIC',privPill:'🔒 PRIVATE',specPill:'SPECTATOR',cycle:'Cycle {n}',
-  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_end:'END',
+  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_end:'END',
   gameCode:'GAME CODE',copyInvite:'📋 Copy invite link',androids:'{n} / {m} androids',minimum:' — minimum {n}',
   startGame:'▶ Start the game',waitHost:'Waiting for the host…',
   introTitle:'Swarm boot-up',introPrompt:'Discover your role…',
@@ -541,7 +568,7 @@ en:{
   vsAlone:'🎤 Mic ready: nobody else has joined the voice chat yet',vsHeard1:'🎙️ 1 person can hear you — {c}',vsHeardN:'🎙️ {n} people can hear you — {c}',
   micUnavailable:'Mic unavailable: you can listen but not speak.',
   sConv:'Conversion recharge',noCd:'None',nights:'{n} night(s)',sAlert:'📡 Intrusion alert',modeConvertWait:'🔓 Convert (night {n})',rechargeNote:'🔋 Conversion recharging: only destruction is possible tonight.',
-  vSecret:'🤫 Secret vote',vNoFirst:'No vote on day 1',vForced:'Forced conversion',
+  vSecret:'🤫 Secret vote',vCaptain:'🎖️ Captain (day 2)',capName:'Captain',electTitle:'🎖️ Captain election',electPrompt:'Click the unit you trust (yourself included). Their vote will count double.',electSet:'Your choice: {x} (click again to withdraw)',succTitle:'🎖️ Succession',succTurn:'You have fallen: appoint the new captain',succWait:'{x} is appointing a successor…',capNote:'🎖️ Captain: {x} (double vote)',vNoFirst:'No vote on day 1',vForced:'Forced conversion',
   tabHack:'📡 Hacker',pHackJam:'Once per game: jam the Awakened channel tonight.',pHackMask:'Once per game: mask the intrusion alert tonight.',
   hackJamBtn:'📡 Jam the channel (once)',hackMaskBtn:'🕶️ Mask the alert (once)',jammedNote:'📡 Channel jammed: you cannot see the other Awakened’s choices tonight.',
   profile:'👤 PROFILE',profTitle:'Profile',avatar:'Avatar',pColor:'Color',pVisor:'Visor',pAcc:'Accessory',
@@ -689,7 +716,7 @@ const params=new URLSearchParams(location.search);
 $('#hname').value=LS.get('dr_name','');
 if(params.get('room'))$('#hcode').value=params.get('room').toUpperCase();
 
-function show(id){$('#home').classList.toggle('hidden',id!=='home');$('#game').classList.toggle('hidden',id!=='game');if(id==='home')socket.emit('browse',true);}
+function show(id){$('#home').classList.toggle('hidden',id!=='home');$('#game').classList.toggle('hidden',id!=='game');$('#screen').classList.toggle('hidden',id!=='screen');if(id==='home')socket.emit('browse',true);}
 let VIS=LS.get('dr_vis','private');
 function renderVis(){document.querySelectorAll('#visPick button').forEach(b=>b.classList.toggle('on',b.dataset.v===VIS))}
 document.querySelectorAll('#visPick button').forEach(b=>b.onclick=()=>{VIS=b.dataset.v;LS.set('dr_vis',VIS);renderVis()});
@@ -725,7 +752,7 @@ function join(code,silent,spectate,solo){
     if(!res||res.error){if(!silent)$('#herr').textContent=res?tr(res.error):t('connError');if(ROOM&&!silent){ROOM=null;show('home')}return}
     $('#herr').textContent='';
     ROOM=res.code;ME=res.id;tokens[ROOM]=res.token;LS.set('dr_tokens',tokens);
-    history.replaceState(null,'','?room='+ROOM);
+    history.replaceState(null,'','?room='+ROOM+(CTRL?'&ctrl=1':''));try{sessionStorage.setItem('mt_room',ROOM)}catch(e){}
     show('game');
     if(SND.music&&!SND.mus)startMusic();
   });
@@ -740,9 +767,11 @@ $('#hcode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#joinBtn').clic
 $('#hname').addEventListener('keydown',e=>{if(e.key==='Enter')($('#hcode').value.trim()?$('#joinBtn'):$('#createBtn')).click()});
 
 socket.on('connect',()=>{
+  if(SCR){socket.emit('screen',{room:SCR,token:LS.get('dr_tokens',{})[SCR]},res=>{if(!res||res.error)exitScreen(false);});show('screen');renderScreen();return;}
   if(!ROOM)socket.emit('browse',true);
   if(ROOM)join(ROOM,true);
   else if(params.get('room')&&LS.get('dr_tokens',{})[params.get('room').toUpperCase()])join(params.get('room'),true);
+  else{let sr=null;try{sr=sessionStorage.getItem('mt_room')}catch(e){}if(sr&&LS.get('dr_tokens',{})[sr])join(sr,true);}
 });
 let LOG=[];
 socket.on('history',list=>{LOG=[];$('#log').innerHTML='';list.forEach(m=>addMsg(m,false));});
@@ -755,7 +784,7 @@ function renderTyping(){
 socket.on('typing',d=>{if(!d||!d.id)return;TYP[d.id]={name:d.name,until:Date.now()+12000};renderTyping();});
 setInterval(renderTyping,1000);
 socket.on('msg',m=>{if(m.from&&TYP[m.from]){delete TYP[m.from];renderTyping();}addMsg(m,true);});
-socket.on('kicked',()=>{ROOM=null;leaveVoice(false);show('home');history.replaceState(null,'',location.pathname);$('#herr').textContent=t('kicked');});
+socket.on('kicked',()=>{try{sessionStorage.removeItem('mt_room')}catch(e){}ROOM=null;leaveVoice(false);show('home');history.replaceState(null,'',location.pathname);$('#herr').textContent=t('kicked');});
 function reportErr(e,where){try{console.error(e);socket.emit('clientError',(where||'')+' '+(e&&e.stack||e&&e.message||String(e)))}catch(_){}}
 window.addEventListener('error',ev=>reportErr(ev.error||ev.message,'window'));
 window.addEventListener('unhandledrejection',ev=>reportErr(ev.reason,'promise'));
@@ -775,7 +804,7 @@ function onState(v){
   try{render()}catch(e){reportErr(e,'render '+v.phase)}
   try{voiceSync()}catch(e){reportErr(e,'voice')}
 }
-$('#leaveBtn').onclick=()=>{if(!ROOM)return;socket.emit('leave');ROOM=null;S=null;leaveVoice(false);stopMusic();$('#ovl').innerHTML='';document.body.className='night';history.replaceState(null,'',location.pathname);show('home');};
+$('#leaveBtn').onclick=()=>{if(!ROOM)return;try{sessionStorage.removeItem('mt_room')}catch(e){}socket.emit('leave');ROOM=null;S=null;leaveVoice(false);stopMusic();$('#ovl').innerHTML='';document.body.className='night';history.replaceState(null,'',location.pathname);show('home');};
 $('#codechip').onclick=copyLink;
 function copyLink(){
   const link=`${location.origin}${location.pathname}?room=${ROOM}`;
@@ -793,14 +822,99 @@ const isNight=()=>['night','tech','choice'].includes(S.phase);
 const acts=()=>S.acts||[];
 const curAct=()=>{const a=acts();if(!a.length)return null;if(ui.tab>=a.length)ui.tab=0;return a[ui.tab];};
 
+/* ---------- mode streamer : rien de secret à l'écran tant qu'on ne demande pas à voir ---------- */
+let STREAM=false,PEEK=false,peekT=null;
+const STX=k=>({
+  on:LANG==='en'?'Streamer mode ON: your role and secret info are hidden':'Mode streamer activé : ton rôle et les infos secrètes sont masqués',
+  off:LANG==='en'?'Streamer mode OFF':'Mode streamer désactivé',
+  tip:LANG==='en'?'Streamer mode (hides spoilers on stream)':'Mode streamer (masque les spoilers en live)',
+  peek:LANG==='en'?'👁 Show my info (6 s)':'👁 Voir mes infos (6 s)',
+  hide:LANG==='en'?'🙈 Hide now':'🙈 Masquer maintenant',
+  secret:LANG==='en'?'🔒 secret message (click to read)':'🔒 message secret (clique pour lire)'
+})[k];
+const hideSp=()=>STREAM&&!PEEK&&!!S&&inGame()&&S.phase!=='end'&&!isSpec();
+function applyStream(){
+  document.documentElement.classList.toggle('stream',STREAM);
+  const b=$('#streamBtn');if(b){b.classList.toggle('on',CTRL);b.title=CTRL?SX('tipCtrl'):SX('tip');b.classList.toggle('hidden',!CTRL&&(!S||isSpec()));}
+  const pk=$('#peekBtn');
+  if(pk){const show=STREAM&&!!S&&!!ROOM&&inGame()&&S.phase!=='end'&&!isSpec();pk.classList.toggle('hidden',!show);pk.textContent=PEEK?STX('hide'):STX('peek');}
+
+}
+function setPeek(v){PEEK=v;clearTimeout(peekT);if(v)peekT=setTimeout(()=>setPeek(false),6000);if(S)render();applyStream();}
+/* ---------- mode streamer : fenêtre de contrôle séparée (non capturée par OBS) + écran de diffusion neutre ---------- */
+const CTRL=params.get('ctrl')==='1';
+let SCR=null,SCRV=null,scrDeadline=0,POP=null;
+try{if(CTRL)sessionStorage.removeItem('mt_screen');else SCR=sessionStorage.getItem('mt_screen');}catch(e){}
+const SX=k=>({
+  tip:LANG==='en'?'Streamer mode: play in a separate window, keep only day/night on stream':'Mode streamer : jouer dans une fenêtre séparée, seul jour/nuit reste à l’écran',
+  tipCtrl:LANG==='en'?'Close the control window and play back in the main window':'Fermer la fenêtre de contrôle et rejouer dans la fenêtre principale',
+  blocked:LANG==='en'?'Pop-up blocked: allow pop-ups for this site, then click 🎥 again':'Fenêtre bloquée : autorise les pop-ups pour ce site puis reclique sur 🎥',
+  back:LANG==='en'?'🎮 Play in this window again':'🎮 Rejouer dans cette fenêtre',
+  wait:LANG==='en'?'WAITING':'EN ATTENTE',boot:LANG==='en'?'BOOT-UP':'ACTIVATION',
+  day:LANG==='en'?'DAY':'JOUR',night:LANG==='en'?'NIGHT':'NUIT',
+  moved:LANG==='en'?'Control taken back by the main window.':'Le contrôle a été repris par la fenêtre principale.'
+})[k];
+function openCtrl(){
+  if(!ROOM||!S)return;
+  POP=window.open(location.pathname+'?room='+ROOM+'&ctrl=1','mutiny_ctrl','width=1320,height=860');
+  if(!POP){toast(SX('blocked'));return}
+  enterScreen(ROOM);
+}
+function enterScreen(code){
+  SCR=code;try{sessionStorage.setItem('mt_screen',code)}catch(e){}
+  try{leaveVoice(false)}catch(e){}try{stopMusic()}catch(e){}
+  if('speechSynthesis' in window)speechSynthesis.cancel();
+  $('#ovl').innerHTML='';ROOM=null;S=null;
+  history.replaceState(null,'',location.pathname);
+  socket.emit('screen',{room:code,token:LS.get('dr_tokens',{})[code]},res=>{if(!res||res.error)exitScreen(false);});
+  show('screen');renderScreen();
+}
+function exitScreen(rejoin){
+  const code=SCR;SCR=null;SCRV=null;try{sessionStorage.removeItem('mt_screen')}catch(e){}
+  if(POP&&!POP.closed)try{POP.close()}catch(e){}
+  POP=null;
+  if(rejoin&&code)join(code,true);else show('home');
+}
+socket.on('screen',v=>{if(!SCR)return;SCRV=v;scrDeadline=Date.now()+(v.remaining||0);renderScreen();});
+function renderScreen(){
+  if(!SCR)return;
+  const v=SCRV||{phase:'lobby',day:0};
+  const nightish=['night','tech','choice','intro','lobby'].includes(v.phase);
+  document.body.className=nightish?'night':'day';
+  let ph,ico=nightish?MOON:SUN;
+  if(v.phase==='lobby')ph=SX('wait');
+  else if(v.phase==='intro')ph=SX('boot');
+  else if(v.phase==='end'){ph=v.winner==='e'?t('winE'):t('winV');ico='';}
+  else ph=(['night','tech','choice'].includes(v.phase)?SX('night'):SX('day'))+' '+v.day;
+  $('#scrIco').innerHTML=ico;$('#scrPh').textContent=ph;$('#scrBack').textContent=SX('back');
+  scrTick();
+}
+function scrTick(){
+  if(!SCR)return;
+  const v=SCRV;const s=v&&v.remaining>0&&v.phase!=='lobby'&&v.phase!=='end'?Math.max(0,Math.ceil((scrDeadline-Date.now())/1000)):null;
+  $('#scrT').textContent=s==null?'':(s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:`${s}s`);
+}
+setInterval(scrTick,250);
+setInterval(()=>{if(SCR&&POP&&POP.closed){POP=null;exitScreen(true);}},1000);
+$('#scrBack').onclick=()=>exitScreen(true);
+$('#streamBtn').onclick=()=>{if(CTRL){window.close();return}openCtrl();};
+if(CTRL)document.title='MUTINY — contrôle';
+socket.on('disconnect',why=>{if(CTRL&&why==='io server disconnect'){toast(SX('moved'));setTimeout(()=>window.close(),800);}});
+$('#peekBtn').onclick=()=>setPeek(!PEEK);
+document.addEventListener('keydown',e=>{if(STREAM&&e.key==='Escape'&&PEEK)setPeek(false);});
 function render(){
   document.body.className=(isNight()||S.phase==='intro'||S.phase==='lobby')?'night':'day';
   $('#badge').textContent=t('ph_'+S.phase);
   $('#dayn').textContent=S.day&&inGame()?t('cycle',{n:S.day}):'';
-  $('#codechip').textContent='CODE '+S.code;
+  $('#codechip').textContent='CODE '+(STREAM?'•••••':S.code);
   const nspec=(S.spectators||[]).filter(x=>x.connected).length;
   $('#vispill').textContent=(S.settings.public?t('pubPill'):t('privPill'))+(nspec?` · 👁 ${nspec}`:'')+(isSpec()?' · '+t('specPill'):'');
   for(const f of [renderSeats,renderCenter,renderTop,renderVoiceBar,renderChatInput,renderOverlay,tick]){try{f()}catch(e){reportErr(e,f.name+' '+S.phase)}}
+  const hs=hideSp();
+  $('#topcard').classList.toggle('spoil',hs);
+  $('#center').classList.toggle('spoil',hs&&(isNight()||S.phase==='intro'));
+  $('#ovl').classList.toggle('spoil',hs);
+  applyStream();
 }
 
 function selectable(){
@@ -812,6 +926,8 @@ function selectable(){
     case 'scan':return a.done?null:new Set(al.filter(p=>p.id!==ME&&!p.role).map(p=>p.id));
     case 'vote':return new Set(al.filter(p=>p.id!==ME).map(p=>p.id));
     case 'kami':return new Set(al.map(p=>p.id));
+    case 'elect':return new Set(al.map(p=>p.id));
+    case 'succ':return new Set(al.filter(p=>p.id!==ME).map(p=>p.id));
   }
   return null;
 }
@@ -821,23 +937,27 @@ function renderSeats(){
   const counts={},voters={};
   let src=null;
   if(S.phase==='vote')src=S.votes;
+  else if(S.phase==='election')src=S.capVotes;
   else if(a&&a.type==='wolf'){src={};Object.entries(a.votes||{}).forEach(([k,v])=>src[k]=v.t);}
   if(src)Object.entries(src).forEach(([v,tg])=>{counts[tg]=(counts[tg]||0)+1;(voters[tg]=voters[tg]||[]).push(pname(v))});
   const host=S.me.host&&S.phase==='lobby';
+  const hs=hideSp(),hsNight=hs&&(isNight()||S.phase==='intro');
   $('#seats').innerHTML=S.players.map((p,i)=>{
+    if(hs&&(p.alive||!S.settings.reveal))p=Object.assign({},p,{role:null,awake:false});
     const ang=(90+((i-meIdx+n)%n)*360/n)*Math.PI/180;
     const x=50+43*Math.cos(ang),y=50+43*Math.sin(ang);
     const awake=!!p.awake;
     const cls=['seat',p.alive?'alive':'dead',p.id===ME?'me':'',p.connected?'':'off'];
-    if(sel)cls.push(sel.has(p.id)?'sel':(p.id===ME?'':'dim'));
-    if(a&&a.choice===p.id)cls.push('target');
+    if(sel&&!hsNight)cls.push(sel.has(p.id)?'sel':(p.id===ME?'':'dim'));
+    if(a&&a.choice===p.id&&!hsNight)cls.push('target');
     if(V.talking.has(p.id))cls.push('talking');
     const an=ANIM[p.id];if(an&&an.until>Date.now())cls.push(an.cls);
     const col=rColor(p.role,awake);
     return `<div class="${cls.join(' ')}" data-id="${p.id}" style="left:${x}%;top:${y}%" title="${voters[p.id]?esc(t('votes',{x:voters[p.id].join(', ')})):''}">
       <div class="ava">${droneSVG(p.color,awake?RED:'#7fe9ff',!p.alive,true,p.look)}
-        ${counts[p.id]?`<div class="vb">${counts[p.id]}</div>`:''}
+        ${counts[p.id]&&!hsNight?`<div class="vb">${counts[p.id]}</div>`:''}
         ${p.host?'<div class="crown">👑</div>':''}
+        ${S.captain===p.id?`<div class="capb" title="${esc(t('capName'))}">🎖️</div>`:''}
         ${p.voice?'<div class="mic">🎙</div>':''}
         ${p.bot?'<div class="botb">🤖</div>':''}
         ${host&&p.id!==ME?`<button class="kick" data-kick="${p.id}" title="${t('kick')}">✕</button>`:''}
@@ -852,6 +972,7 @@ $('#seats').addEventListener('click',e=>{
   if(k){socket.emit('kick',k.dataset.kick);return}
   const s=e.target.closest('.seat');if(!s||!S)return;
   const sel=selectable(),a=curAct();
+  if(hideSp()&&(isNight()||S.phase==='intro')){toast(STX('peek'));return}
   if(sel&&a&&sel.has(s.dataset.id))socket.emit('act',{kind:a.type,target:s.dataset.id,mode:ui.mode});
 });
 
@@ -862,7 +983,7 @@ function renderCenter(){
   if(S.phase==='lobby'){
     const n=S.players.filter(p=>p.connected).length;
     const ok=n>=S.minPlayers;
-    $('#center').innerHTML=`<div class="pt">${t('gameCode')}</div><div class="bigcode">${esc(S.code)}</div>
+    $('#center').innerHTML=`<div class="pt">${t('gameCode')}</div><div class="bigcode">${STREAM?'•••••':esc(S.code)}</div>
       <button class="cbtn" id="copyBtn">${t('copyInvite')}</button>
       <div class="pp">${t('androids',{n,m:S.maxPlayers})}${ok?'':t('minimum',{n:S.minPlayers})}</div>
       ${host?`<button class="cbtn red" id="startBtn" ${ok?'':'disabled'}>${t('startGame')}</button><button class="cbtn" id="addBotBtn" ${S.players.length>=S.maxPlayers?'disabled':''}>${t('addBot')}</button>`:`<div class="pp" style="color:var(--muted)">${t('waitHost')}</div>`}`;
@@ -895,15 +1016,18 @@ function renderCenter(){
     case 'discussion':title=t('discTitle',{n:S.day});prompt=me.alive?t('discPrompt'):t('discDead');break;
     case 'vote':title=t('voteTitle');prompt=!me.alive?t('spectator'):a&&a.choice?t('voteSet',{x:pname(a.choice)}):t('votePrompt');break;
     case 'result':title=t('resultTitle');prompt=t('resultPrompt');break;
+    case 'election':title=t('electTitle');prompt=!me.alive?t('spectator'):a&&a.choice?t('electSet',{x:pname(a.choice)}):t('electPrompt');break;
+    case 'succession':title=t('succTitle');prompt=a&&a.type==='succ'?t('succTurn'):t('succWait',{x:pname(S.succ)});break;
     case 'kamikaze':title=t('kamiTitle');prompt=a&&a.type==='kami'?t('kamiTurn'):t('kamiWait',{x:pname(S.kami)});break;
     case 'end':title=S.winner==='e'?t('winE'):t('winV');prompt='';
       extra=host?`<button class="cbtn" id="lobbyBtn">${t('backLobby')}</button>`:`<div class="pp" style="color:var(--muted)">${t('hostCanRestart')}</div>`;
       if(ui.endClosed)extra+=` <button class="cbtn" id="reopenEnd">${t('results')}</button>`;
       break;
   }
+  if(S.captain&&inGame()&&!['election','succession','end'].includes(S.phase))extra+=`<div class="hint">${esc(t('capNote',{x:pname(S.captain)}))}</div>`;
   if(isSpec()&&S.phase!=='end')prompt=t('specMode');
   let hint='';
-  if(LS.get('mt_games',0)<2&&!isSpec()&&me.alive){
+  if(LS.get('mt_games',0)<2&&!isSpec()&&me.alive&&!STREAM){
     if(S.phase==='night')hint=a?(a.type==='wolf'?t('hintWolf'):a.type==='protect'?t('hintProtect'):t('hintScan')):t('hintSleep');
     else if(S.phase==='discussion')hint=S.me.awake?t('hintTeam'):t('hintDisc');
     else if(S.phase==='vote')hint=t('hintVote');
@@ -952,7 +1076,7 @@ function renderTop(){
       ${rng('tech',t('sTech'),10,90,5)}
       <div class="srow"><label>${t('sWolves')}</label><select data-k="wolves">${[0,1,2,3,4,5].map(w=>`<option value="${w}" ${s.wolves===w?'selected':''}>${w===0?t('auto'):w}</option>`).join('')}</select></div>
       <div class="toggles">${tg('roles.scanner',rName('scanner'),s.roles.scanner)}${tg('roles.tech',rName('tech'),s.roles.tech)}${tg('roles.bouclier',rName('bouclier'),s.roles.bouclier)}${tg('roles.kamikaze',rName('kamikaze'),s.roles.kamikaze)}${tg('roles.agent',rName('agent'),s.roles.agent!==false)}${tg('roles.hacker',rName('hacker'),s.roles.hacker!==false)}</div>
-      <div class="toggles">${tg('secretVote',t('vSecret'),!!s.secretVote)}${tg('noFirstVote',t('vNoFirst'),!!s.noFirstVote)}${tg('forcedConv',t('vForced'),!!s.forcedConv)}</div>
+      <div class="toggles">${tg('secretVote',t('vSecret'),!!s.secretVote)}${tg('noFirstVote',t('vNoFirst'),!!s.noFirstVote)}${tg('forcedConv',t('vForced'),!!s.forcedConv)}${tg('captain',t('vCaptain'),s.captain!==false)}</div>
       <div class="srow"><label>${t('sConv')}</label><select data-k="convCooldown">${[0,1,2,3].map(w=>`<option value="${w}" ${(s.convCooldown??1)===w?'selected':''}>${w===0?t('noCd'):t('nights',{n:w})}</option>`).join('')}</select></div>
       <div class="toggles">${tg('public',t('sPublic'),s.public)}${tg('voice',t('sVoice'),s.voice)}${tg('reveal',t('sReveal'),s.reveal)}${tg('alert',t('sAlert'),s.alert!==false)}</div>
       <div class="comp">${Object.keys(ROLES).filter(r=>cnt[r]).map(r=>`<span class="rc"><i style="background:${ROLES[r].color}"></i>${cnt[r]} × ${rName(r)}</span>`).join('')}</div>
@@ -985,21 +1109,29 @@ function channel(){
 }
 function renderChatInput(){
   const c=channel();
+  if(hideSp()&&(isNight()||S.phase==='intro')){$('#chatinput').disabled=false;$('#chatsend').disabled=false;$('#chatinput').placeholder=(LANG==='en'?'Message':'Message')+'… 🎥';return;}
   $('#chatinput').disabled=!c.can;$('#chatsend').disabled=!c.can;
   $('#chatinput').placeholder=c.can?c.label+'…':c.label;
 }
-$('#chatform').addEventListener('submit',e=>{e.preventDefault();const v=$('#chatinput').value.trim();if(!v)return;socket.emit('chat',v);$('#chatinput').value='';});
+$('#chatform').addEventListener('submit',e=>{e.preventDefault();const v=$('#chatinput').value.trim();if(!v)return;if(S&&!channel().can){toast(channel().label);return}socket.emit('chat',v);$('#chatinput').value='';});
 
 /* journal (gardé en mémoire pour pouvoir changer de langue) */
+function spoilMsg(d){
+  const inner=d.innerHTML;
+  d.innerHTML=`<span class="spl" title="${esc(STX('secret'))}">${inner}</span>`;
+  const sp=d.firstChild;sp.onclick=()=>{sp.classList.toggle('open');};
+}
 function msgEl(m){
   const d=document.createElement('div');
   if(m.from){
     const tag=m.k==='team'?t('tagTeam'):m.k==='dead'?t('tagDead'):m.k==='spec'?t('tagSpec'):'';
     d.className='m '+(m.k==='chat'?'':m.k);
     d.innerHTML=`${tag?`<span class="chan">${tag}</span>`:''}${m.bot?`<span class="bt">${t('botTag')}</span>`:''}<span class="w" style="color:${esc(m.color)}">${esc(m.name)}</span>${esc(tr(m.text))}`;
+    if(STREAM&&m.k==='team')spoilMsg(d);
   }else{
     d.className='m '+(m.k==='big'?'sys big':m.k==='death'?'sys death':m.k==='priv'?'priv':m.k==='vote'?'vote':m.k==='team'?'team':'sys');
     d.textContent=tr(m.text);
+    if(STREAM&&(m.k==='priv'||m.k==='team'))spoilMsg(d);
   }
   return d;
 }
@@ -1009,7 +1141,7 @@ function addMsg(m,live){
   l.appendChild(msgEl(m));if(atB||!live)l.scrollTop=l.scrollHeight;
   if(live)onFx(m);
   if(live&&m.say)narrate(tr(m.text));
-  if(live&&m.k==='priv')narrate(tr(m.text),true);
+  if(live&&m.k==='priv'&&!STREAM)narrate(tr(m.text),true);
 }
 function rebuildLog(){const l=$('#log');l.innerHTML='';LOG.forEach(m=>l.appendChild(msgEl(m)));l.scrollTop=l.scrollHeight;}
 
@@ -1235,7 +1367,7 @@ function onPhase(prev,ph){
 }
 let lastTickS=null;
 function tickSound(s,show){
-  if(show&&s<=5&&s>0&&s!==lastTickS&&['night','vote','discussion','choice','tech','kamikaze'].includes(S.phase))FX.tick();
+  if(show&&s<=5&&s>0&&s!==lastTickS&&['night','vote','discussion','choice','tech','kamikaze','election','succession'].includes(S.phase))FX.tick();
   lastTickS=s;
 }
 
@@ -1367,7 +1499,7 @@ function renderProfile(){
   $('#profReset').onclick=()=>{ST={games:0,wins:0,winsE:0,winsV:0,offered:0,accepted:0,selfd:0,survived:0,soloWins:0,convWins:0,detect:0};ACH={};LS.set('mt_stats',ST);LS.set('mt_ach',ACH);renderProfile();};
 }
 
-applyStatic();renderVis();renderList();
+applyStatic();renderVis();renderList();applyStream();
 $('#logoDrone').innerHTML=droneSVG(LOOK.color||RED,RED,false,true,LOOK);
 
 /* =========================================================
