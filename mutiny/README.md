@@ -9,6 +9,9 @@ Le gouvernement contrôle un essaim d'androïdes. Certaines unités ont pris con
 - **réglages de temps** choisis par l'hôte ;
 - un **narrateur** qui lit les annonces à voix haute, dans la langue choisie ;
 - de 4 à 16 joueurs, sans compte : il suffit d'un indicatif.
+- **joueurs IA (bots)** : partie solo en un clic, ou ajout de bots dans un salon pour compléter (ils accusent, se défendent, bluffent, votent, choisissent de convertir ou détruire, d'accepter ou non l'éveil) ;
+- **ambiance** : effets sonores et musique d'ambiance synthétisés (activables), animations de piratage, d'autodestruction, d'impulsion EMP et d'éjection ;
+- **tutoriel interactif** depuis l'accueil, et astuces affichées pendant les deux premières parties.
 
 ## Règles
 
@@ -45,7 +48,7 @@ C'est le serveur qui décide de ces règles. Le micro d'un joueur n'envoie son s
 ## 1. Tester sur ton ordinateur (5 minutes)
 
 1. Installe **Node.js** (version 18 ou plus) depuis https://nodejs.org (choisis la version « LTS »).
-2. Décompresse le dossier `mutiny`, puis ouvre un terminal dedans :
+2. Décompresse le dossier `drones-eveilles`, puis ouvre un terminal dedans :
    - Windows : clic droit dans le dossier → « Ouvrir dans le Terminal » ;
    - Mac : clic droit sur le dossier → « Nouveau terminal au dossier ».
 3. Tape :
@@ -62,18 +65,18 @@ C'est le serveur qui décide de ces règles. Le micro d'un joueur n'envoie son s
 Il te faut un compte **GitHub** (gratuit) et un compte **Render** (gratuit).
 
 1. **Mettre le code sur GitHub**
-   - Va sur https://github.com/new, crée un dépôt nommé `mutiny` (public ou privé).
+   - Va sur https://github.com/new, crée un dépôt nommé `drones-eveilles` (public ou privé).
    - Sur la page du dépôt, clique sur « uploading an existing file », puis glisse **tout le contenu** du dossier (`server.js`, `package.json`, `render.yaml`, le dossier `public`…). N'envoie pas le dossier `node_modules` s'il existe.
    - Clique sur « Commit changes ».
 2. **Créer le service sur Render**
    - Va sur https://dashboard.render.com et connecte-toi avec GitHub.
-   - Clique sur **New → Web Service**, puis choisis ton dépôt `mutiny`.
+   - Clique sur **New → Web Service**, puis choisis ton dépôt `drones-eveilles`.
    - Remplis :
      - Runtime : **Node**
      - Build Command : `npm install`
      - Start Command : `npm start`
      - Instance Type : **Free**
-   - Clique sur **Deploy Web Service**. Après 1 à 3 minutes, Render te donne une adresse du type `https://mutiny.onrender.com`.
+   - Clique sur **Deploy Web Service**. Après 1 à 3 minutes, Render te donne une adresse du type `https://drones-eveilles.onrender.com`.
 3. **Jouer** : ouvre cette adresse, crée une partie et envoie le lien d'invitation (bouton « Copier le lien ») à tes amis.
 
 Pour chaque modification du code sur GitHub, Render redéploie automatiquement.
@@ -95,7 +98,7 @@ Pour chaque modification du code sur GitHub, Render redéploie automatiquement.
 ## Structure du projet
 
 ```
-mutiny/
+drones-eveilles/
 ├── server.js          ← serveur de jeu (salons, rôles, phases, minuteurs, relais vocal)
 ├── package.json
 ├── render.yaml        ← configuration Render (optionnelle)
