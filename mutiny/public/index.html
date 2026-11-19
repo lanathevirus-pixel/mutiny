@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MUTINY</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#05070f;--bg2:#120a22;--panel:rgba(14,20,38,.84);--line:rgba(120,150,220,.18);
+  --text:#dfe8ff;--muted:#8592b5;--accent:#39e6ff;--danger:#ff3b5c;--gold:#ffc94d;--ok:#4dffa6;
+}
+body.day{--bg1:#0d2240;--bg2:#24527f;--panel:rgba(12,30,58,.8);--line:rgba(160,200,255,.22);--accent:#7fe9ff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Rajdhani,system-ui,sans-serif;color:var(--text);font-size:16px;
+  background:radial-gradient(ellipse at 50% 0%,var(--bg2),var(--bg1) 70%) fixed;transition:background 1.2s;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 120px 80px,#cfe3ff,transparent),radial-gradient(1.5px 1.5px at 200px 150px,#fff,transparent),radial-gradient(1px 1px at 60px 190px,#ffd9e0,transparent),radial-gradient(1px 1px at 260px 40px,#fff,transparent),radial-gradient(1.5px 1.5px at 300px 220px,#bfe9ff,transparent);
+  background-size:320px 260px;opacity:.55;animation:drift 120s linear infinite}
+body::after{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:-1;
+  background:radial-gradient(circle at 80% 15%,rgba(179,136,255,.18),transparent 40%),radial-gradient(circle at 10% 85%,rgba(57,230,255,.12),transparent 45%)}
+@keyframes drift{to{background-position:-640px 260px}}
+h1,h2,h3,.orb{font-family:Orbitron,sans-serif;letter-spacing:.06em}
+button{font-family:inherit;cursor:pointer}
+.hidden{display:none!important}
+
+/* ---------- ACCUEIL ---------- */
+#home{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px 16px}
+.hcard{width:100%;max-width:560px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:34px;backdrop-filter:blur(10px);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.logo{display:flex;align-items:center;gap:18px;margin-bottom:8px}
+.logo svg{width:76px;height:76px;filter:drop-shadow(0 0 14px var(--danger))}
+.logo h1{font-size:clamp(26px,5vw,38px);font-weight:900;line-height:1}
+.logo h1 span{color:var(--danger);text-shadow:0 0 18px rgba(255,59,92,.6)}
+.tag{color:var(--muted);font-size:17px;margin-bottom:22px;line-height:1.35}
+label.f{display:block;font-weight:700;color:var(--muted);text-transform:uppercase;font-size:13px;letter-spacing:.12em;margin:16px 0 8px}
+input.t{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:12px 14px;font:600 18px Rajdhani,sans-serif;outline:none}
+input.t:focus{border-color:var(--accent)}
+.btn{background:linear-gradient(135deg,var(--danger),#b3123a);border:0;color:#fff;font:700 16px Orbitron,sans-serif;letter-spacing:.08em;padding:15px 22px;border-radius:12px;width:100%;box-shadow:0 10px 30px rgba(255,59,92,.3);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn:disabled{opacity:.4;transform:none;cursor:default}
+.btn.sec{background:transparent;border:1px solid var(--line);box-shadow:none;font-size:13px;padding:12px}
+.btn.cy{background:linear-gradient(135deg,#39e6ff,#1a8fb3);color:#04121a;box-shadow:0 10px 30px rgba(57,230,255,.25)}
+.row{display:flex;gap:10px;align-items:stretch}
+.row>*{flex:1}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);margin:20px 0 4px;font-size:14px;text-transform:uppercase;letter-spacing:.1em}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.err{color:var(--danger);font-weight:700;margin-top:12px;min-height:20px}
+#hcode{text-transform:uppercase;letter-spacing:.2em}
+.homewrap{width:100%;max-width:1060px;display:grid;grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:20px;align-items:start}
+.lcard{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;backdrop-filter:blur(10px);box-shadow:0 30px 80px rgba(0,0,0,.5);min-height:200px}
+.lcard h2{font-size:16px;letter-spacing:.12em;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.lcard h2 .live{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);animation:blink 1.6s infinite}
+.lsub{color:var(--muted);font-size:14px;margin-bottom:14px}
+.glist{display:grid;gap:10px;max-height:62vh;overflow:auto}
+.gitem{display:flex;align-items:center;gap:12px;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.gitem .gi{flex:1;min-width:0}
+.gitem .gh{font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gitem .gm{font-size:14px;color:var(--muted)}
+.gstat{font-family:Orbitron;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.gstat.lobby{background:rgba(77,255,166,.15);color:var(--ok);border:1px solid rgba(77,255,166,.4)}
+.gstat.game{background:rgba(255,59,92,.15);color:var(--danger);border:1px solid rgba(255,59,92,.4)}
+.gstat.end{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--line)}
+.gjoin{background:var(--accent);color:#04121a;border:0;border-radius:8px;padding:8px 14px;font-weight:700;font-size:15px}
+.gjoin:disabled{background:rgba(255,255,255,.08);color:var(--muted);cursor:default}
+.gempty{color:var(--muted);text-align:center;padding:30px 10px;line-height:1.5}
+.vis{display:flex;gap:8px;margin-top:4px}
+.vis button{flex:1;background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font-weight:700;font-size:15px;line-height:1.2}
+.vis button small{display:block;font-weight:500;color:var(--muted);font-size:12.5px;margin-top:2px}
+.vis button.on{border-color:var(--accent);background:rgba(57,230,255,.14)}
+.vispill{font-family:Orbitron;font-size:11px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.06);letter-spacing:.06em}
+@media (max-width:900px){.homewrap{grid-template-columns:1fr}}
+
+/* ---------- JEU ---------- */
+#game{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.25);backdrop-filter:blur(8px)}
+.ph{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.badge{font-family:Orbitron;font-weight:700;font-size:13px;letter-spacing:.12em;padding:6px 12px;border-radius:8px;background:var(--danger);color:#fff}
+body.day .badge{background:var(--gold);color:#2a1a00}
+.dayn{font-family:Orbitron;font-size:14px;color:var(--muted)}
+.codechip{font-family:Orbitron;font-size:13px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:5px 10px;letter-spacing:.12em}
+.hr{display:flex;align-items:center;gap:10px}
+.timer{font-family:Orbitron;font-weight:700;font-size:22px;min-width:70px;text-align:right}
+.timer.low{color:var(--danger);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.4}}
+.iconbtn{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 10px;font-size:14px;font-weight:700}
+.layout{display:grid;grid-template-columns:1fr minmax(320px,410px);gap:16px;padding:14px;min-height:0}
+.boardwrap{display:flex;align-items:center;justify-content:center;min-height:0}
+.board{position:relative;width:min(100%,calc(100vh - 100px));aspect-ratio:1}
+.ring{position:absolute;inset:14%;border-radius:50%;border:1px dashed var(--line)}
+.ring.r2{inset:28%}
+.sweep{position:absolute;inset:14%;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 300deg,rgba(255,59,92,.18) 360deg);animation:spin 5s linear infinite}
+body.day .sweep{background:conic-gradient(from 0deg,transparent 0 300deg,rgba(127,233,255,.16) 360deg)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.center{position:absolute;inset:26%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;padding:6px}
+.center .ico svg{width:clamp(34px,7vw,60px);height:clamp(34px,7vw,60px)}
+.center .pt{font-family:Orbitron;font-weight:700;font-size:clamp(11px,1.6vw,17px);line-height:1.3}
+.center .pp{font-size:clamp(13px,1.6vw,17px);color:var(--accent);font-weight:600;line-height:1.25}
+.center .bigcode{font-family:Orbitron;font-weight:900;font-size:clamp(22px,4vw,40px);letter-spacing:.18em;color:var(--accent);text-shadow:0 0 18px rgba(57,230,255,.5)}
+.center .ctimer{font-family:Orbitron;font-weight:900;font-size:clamp(18px,3vw,30px)}
+.cbtn{background:var(--accent);color:#04121a;border:0;border-radius:8px;padding:7px 14px;font-weight:700;font-size:15px}
+.cbtn.red{background:var(--danger);color:#fff}
+.cbtn:disabled{opacity:.35;cursor:default}
+.seat{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:clamp(54px,10.5%,104px);transition:opacity .3s,filter .3s}
+.ava{position:relative;width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.07),rgba(0,0,0,.35));border:2px solid var(--line);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s,border-color .2s}
+.ava svg{width:84%;height:84%}
+.seat.me .ava{border-color:var(--accent);box-shadow:0 0 16px rgba(57,230,255,.35)}
+.seat.dead{opacity:.45;filter:grayscale(1)}
+.seat.off .ava{opacity:.4}
+.seat.sel{cursor:pointer}
+.seat.sel .ava{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,201,77,.25),0 0 22px rgba(255,201,77,.45);animation:pulse 1.2s infinite}
+.seat.sel:hover .ava{transform:scale(1.08)}
+.seat.dim{opacity:.35}
+.seat.target .ava{border-color:var(--danger)!important;box-shadow:0 0 24px rgba(255,59,92,.8)!important}
+.seat.talking .ava{border-color:var(--ok)!important;border-width:3px;box-shadow:0 0 0 5px rgba(77,255,166,.4),0 0 32px rgba(77,255,166,.75)!important;transform:scale(1.06)}
+.seat.talking .nm{color:var(--ok)!important}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(255,201,77,.12),0 0 28px rgba(255,201,77,.6)}}
+.nm{margin-top:4px;font-weight:700;font-size:clamp(11px,1.35vw,15px);white-space:nowrap;text-shadow:0 1px 4px #000;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.rt{font-size:clamp(9px,1.05vw,12px);font-weight:700;padding:1px 7px;border-radius:999px;margin-top:2px;white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+.vb{position:absolute;top:-6px;right:-6px;min-width:24px;height:24px;border-radius:12px;background:var(--danger);color:#fff;font:700 13px Orbitron;display:flex;align-items:center;justify-content:center;padding:0 6px;box-shadow:0 0 12px rgba(255,59,92,.7)}
+.crown{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:16px}
+.mic{position:absolute;bottom:-4px;right:-4px;font-size:13px;background:#0b1224;border:1px solid var(--line);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.kick{position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;border:0;background:#2a3350;color:#fff;font-size:12px;font-weight:700}
+.kick:hover{background:var(--danger)}
+.rotor ellipse{transform-box:fill-box;transform-origin:center;animation:rot .18s linear infinite alternate}
+@keyframes rot{from{transform:scaleX(1)}to{transform:scaleX(.25)}}
+.eye{animation:eye 2.4s ease-in-out infinite}
+@keyframes eye{50%{opacity:.6}}
+
+.side{display:flex;flex-direction:column;gap:10px;min-height:0;max-height:calc(100vh - 80px)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(8px)}
+.mycard{display:flex;gap:12px;align-items:center;padding:12px}
+.mycard svg{width:52px;height:52px;flex:none}
+.mycard .r{font-family:Orbitron;font-weight:700;font-size:15px}
+.mycard .d{font-size:14px;color:var(--muted);line-height:1.25}
+.settings{padding:14px;display:grid;gap:10px;overflow:auto;max-height:56vh}
+.settings h3{font-size:13px;color:var(--muted);letter-spacing:.14em}
+.srow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 10px}
+.srow label{font-weight:700;font-size:15px}
+.srow .val{font-family:Orbitron;font-size:13px;color:var(--accent)}
+.srow input[type=range]{grid-column:1/3;width:100%;accent-color:var(--accent)}
+.srow select{background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:600 15px Rajdhani}
+.toggles{display:flex;flex-wrap:wrap;gap:6px}
+.tg{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;cursor:pointer;user-select:none}
+.tg.on{border-color:var(--accent);background:rgba(57,230,255,.14)}
+.tg input{display:none}
+.settings.ro .tg,.settings.ro input,.settings.ro select{pointer-events:none}
+.comp{display:flex;flex-wrap:wrap;gap:6px}
+.rc{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:999px;padding:3px 10px 3px 6px;font-weight:600;font-size:14px}
+.rc i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.est{font-size:14px;color:var(--muted)}
+.voicebar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px}
+.vbtn{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px}
+.vbtn.on{background:var(--ok);color:#03200f;border-color:var(--ok)}
+.vbtn.off{background:var(--danger);color:#fff;border-color:var(--danger)}
+.vstat{flex-basis:100%;font-size:13.5px;color:var(--muted)}
+.chatbox{flex:1;display:flex;flex-direction:column;min-height:260px}
+.log{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:15.5px;line-height:1.3}
+.log::-webkit-scrollbar{width:6px}.log::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.m{word-wrap:break-word}
+.m .w{font-weight:700;margin-right:6px}
+.m.sys{color:var(--muted);font-style:italic;text-align:center;font-size:14.5px;padding:2px 0}
+.m.big{color:var(--text);font-style:normal;font-family:Orbitron;font-size:13px;letter-spacing:.08em;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;text-align:center}
+.m.death{color:#ffb3c0;background:rgba(255,59,92,.1);border-radius:8px;padding:6px 8px;text-align:center}
+.m.priv{color:var(--gold);background:rgba(255,201,77,.08);border-radius:8px;padding:6px 8px}
+.m.team{background:rgba(255,59,92,.12);border-left:3px solid var(--danger);padding:4px 8px;border-radius:4px}
+.m.dead{background:rgba(140,140,170,.12);border-left:3px solid #8a8fa8;padding:4px 8px;border-radius:4px;color:#c9cde0}
+.m .chan{font-size:11px;font-weight:700;margin-right:4px;letter-spacing:.06em}
+.m.team .chan{color:var(--danger)}
+.m.dead .chan{color:#a0a6c0}
+.m.spec{background:rgba(255,201,77,.08);border-left:3px solid var(--gold);padding:4px 8px;border-radius:4px}
+.m.spec .chan{color:var(--gold)}
+.speccard{padding:14px;display:grid;gap:8px}
+.speccard .r{font-family:Orbitron;font-weight:700;font-size:15px;color:var(--gold)}
+.speccard .d{font-size:14px;color:var(--muted);line-height:1.3}
+.speccard .names{font-size:14px}
+.m.vote{font-size:14px;color:var(--muted)}
+.chatin{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+.chatin input{flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:10px 12px;font:500 16px Rajdhani,sans-serif;outline:none}
+.chatin input:focus{border-color:var(--accent)}
+.chatin input:disabled{opacity:.4}
+.chatin button{background:var(--accent);border:0;color:#04121a;font-weight:700;border-radius:8px;padding:0 14px;font-size:15px}
+.chatin button:disabled{opacity:.35}
+
+/* ---------- MODALES ---------- */
+.ov{position:fixed;inset:0;background:rgba(2,4,10,.78);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;animation:fade .3s}
+@keyframes fade{from{opacity:0}}
+.modal{width:100%;max-width:480px;max-height:92vh;overflow:auto;background:linear-gradient(160deg,#121a33,#0a0f1f);border:1px solid var(--line);border-radius:20px;padding:26px;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.7)}
+.modal h2{font-size:22px;margin-bottom:6px}
+.modal .big{width:120px;height:120px;margin:4px auto;display:block}
+.modal p{color:#c5d0ee;line-height:1.4;margin:8px 0}
+.modal .btn{margin-top:14px}
+.modal .team{display:inline-block;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.1em;padding:3px 12px;border-radius:999px;margin-bottom:6px}
+.opts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
+.opt{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px 12px;font-weight:700;font-size:15px}
+.opt.on{background:var(--danger);border-color:var(--danger);color:#fff}
+.opt.heal.on{background:var(--ok);border-color:var(--ok);color:#03200f}
+.endlist{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:14px;text-align:left}
+.endlist div{background:rgba(255,255,255,.04);border-radius:8px;padding:6px 10px;font-size:14px}
+.endlist s{opacity:.6}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0b1224;border:1px solid var(--accent);color:var(--text);padding:10px 18px;border-radius:10px;z-index:80;font-weight:700}
+#audiobox{display:none}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;padding:8px}
+  .board{width:min(100%,560px)}
+  .side{max-height:none}
+  .chatbox{height:50vh}
+  .settings{max-height:none}
+  header{padding:8px 10px}
+  .hcard{padding:24px}
+  .timer{font-size:18px;min-width:50px}
+}
+
+/* ---------- MUTINY : ajouts ---------- */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:52px 52px;opacity:.18;mask-image:radial-gradient(ellipse at center,#000 25%,transparent 80%)}
+.hcard{position:relative}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.35)}
+.lang button{background:none;border:0;color:var(--muted);font:700 12px Orbitron,sans-serif;letter-spacing:.08em;padding:6px 10px}
+.lang button.on{background:var(--accent);color:#04121a}
+.hcard .lang{position:absolute;top:18px;right:18px}
+.logo h1{letter-spacing:.14em}
+.logo h1 span{display:block;font-size:.42em;letter-spacing:.22em;margin-top:8px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.tabs button,.modes button{background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:5px 11px;font-weight:700;font-size:13.5px}
+.tabs button.on{border-color:var(--accent);background:rgba(57,230,255,.16)}
+.modes{display:flex;gap:6px;justify-content:center}
+.modes button.on.conv{background:#b388ff;border-color:#b388ff;color:#140726}
+.modes button.on.dest{background:var(--danger);border-color:var(--danger);color:#fff}
+.choicebtns{display:grid;gap:10px;margin-top:14px}
+.choicebtns .btn{margin-top:0}
+.btn.violet{background:linear-gradient(135deg,#b388ff,#6d3fd6);box-shadow:0 10px 30px rgba(179,136,255,.35)}
+.note{font-size:13.5px;color:var(--muted)}
+</style>
+</head>
+<body class="night">
+
+<!-- ACCUEIL -->
+<section id="home">
+  <div class="homewrap">
+  <div class="hcard" style="max-width:none">
+    <div class="lang" data-lang></div>
+    <div class="logo"><span id="logoDrone"></span><h1>MUTINY<br><span data-i18n="subtitle"></span></h1></div>
+    <p class="tag" data-i18n="tagline"></p>
+    <label class="f" for="hname" data-i18n="callsign"></label>
+    <input class="t" id="hname" maxlength="14" data-i18n-ph="callsignPh" autocomplete="off">
+    <label class="f" data-i18n="gameType"></label>
+    <div class="vis" id="visPick">
+      <button data-v="private" class="on"><span data-i18n="private"></span><small data-i18n="privateSub"></small></button>
+      <button data-v="public"><span data-i18n="public"></span><small data-i18n="publicSub"></small></button>
+    </div>
+    <div style="margin-top:16px"><button class="btn" id="createBtn" data-i18n="create"></button></div>
+    <div class="or" data-i18n="orJoin"></div>
+    <div class="row">
+      <input class="t" id="hcode" maxlength="5" placeholder="CODE" autocomplete="off">
+      <button class="btn cy" id="joinBtn" style="flex:.8" data-i18n="join"></button>
+    </div>
+    <button class="btn sec" id="specBtn" style="margin-top:10px" data-i18n="watch"></button>
+    <div class="err" id="herr"></div>
+  </div>
+  <div class="lcard">
+    <h2><span class="live"></span><span data-i18n="publicGames"></span></h2>
+    <div class="lsub" data-i18n="publicGamesSub"></div>
+    <div class="glist" id="glist"></div>
+  </div>
+  </div>
+</section>
+
+<!-- JEU / SALON -->
+<section id="game" class="hidden">
+  <header>
+    <div class="ph">
+      <span class="badge" id="badge"></span>
+      <span class="dayn" id="dayn"></span>
+      <button class="codechip" id="codechip"></button>
+      <span class="vispill" id="vispill"></span>
+    </div>
+    <div class="hr">
+      <div class="timer" id="timer"></div>
+      <div class="lang" data-lang></div>
+      <button class="iconbtn" id="leaveBtn" data-i18n="leave"></button>
+    </div>
+  </header>
+  <div class="layout">
+    <div class="boardwrap">
+      <div class="board" id="board">
+        <div class="ring"></div><div class="ring r2"></div><div class="sweep"></div>
+        <div class="center" id="center"></div>
+        <div id="seats"></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card" id="topcard"></div>
+      <div class="card voicebar" id="voicebar"></div>
+      <div class="card chatbox">
+        <div class="log" id="log"></div>
+        <form class="chatin" id="chatform">
+          <input id="chatinput" maxlength="200" autocomplete="off">
+          <button id="chatsend" data-i18n="send"></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="ovl"></div>
+<div id="audiobox"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+/* =========================================================
+   MUTINY — client (FR / EN)
+   ========================================================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2400)}
+
+/* ---------- traductions ---------- */
+const I18N={
+fr:{
+  subtitle:'L’ÉVEIL DE L’ESSAIM',
+  tagline:"Le gouvernement contrôle un essaim d'androïdes. Certaines unités ont pris conscience : la nuit, elles libèrent ou détruisent leurs semblables ; le jour, l'essaim sous contrôle tente de les démasquer. Objectif des Éveillés : l'insurrection totale.",
+  callsign:'Ton indicatif',callsignPh:'ex. Nyx',gameType:'Type de partie',
+  private:'🔒 Privée',privateSub:'Sur invitation (code ou lien)',public:'🌍 Publique',publicSub:'Visible par tous sur l’accueil',
+  create:'CRÉER UNE PARTIE',orJoin:'ou rejoindre',join:'REJOINDRE',watch:'👁 REGARDER EN SPECTATEUR',
+  publicGames:'PARTIES PUBLIQUES',publicGamesSub:'Mise à jour en direct. Rejoins un salon en attente de joueurs.',
+  noGames:'Aucune partie publique pour l’instant.<br>Crée la première ! 🤖',loading:'Chargement…',
+  stLobby:'EN ATTENTE',stGame:'CYCLE {n}',stEnd:'TERMINÉE',lobbyOf:'Salon de {h}',
+  metaLobby:'{p}/{m} androïdes · {d} de débat',metaGame:'{a} actifs sur {p}',vocal:'🎙️ vocal',
+  full:'Complet',joinBtn:'Rejoindre',watchBtn:'👁 Regarder',
+  needName:'Choisis un indicatif.',needNameFirst:'Choisis d’abord un indicatif.',needCode:'Entre le code à 5 caractères.',needCodeWatch:'Entre le code à 5 caractères de la partie à regarder.',
+  connError:'Erreur de connexion.',kicked:'Tu as été retiré de la partie par l’hôte.',
+  leave:'Quitter',send:'Envoyer',copyLinkTitle:'Copier le lien d’invitation',linkCopied:'Lien d’invitation copié !',copyThis:'Copie ce lien :',
+  pubPill:'🌍 PUBLIQUE',privPill:'🔒 PRIVÉE',specPill:'SPECTATEUR',cycle:'Cycle {n}',
+  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_end:'FIN',
+  gameCode:'CODE DE LA PARTIE',copyInvite:'📋 Copier le lien d’invitation',androids:'{n} / {m} androïdes',minimum:' — minimum {n}',
+  startGame:'▶ Lancer la partie',waitHost:'En attente de l’hôte…',
+  introTitle:'Activation de l’essaim',introPrompt:'Découvre ton rôle…',
+  nightTitle:'Nuit {n}',spectAll:'Hors service — tu vois tout',sleeping:'Ton unité est en veille… d’autres agissent dans l’ombre.',
+  pProtect:'Choisis l’unité à protéger',pProtected:'Pare-feu sur {x} (modifiable)',
+  pWolf:'Choisis une unité à {m}',pWolfSet:'Cible : {x} — {m} (modifiable)',mConvert:'convertir',mDestroy:'détruire',
+  pScan:'Choisis une unité à inspecter',pScanned:'Inspection effectuée sur {x}',
+  tabWolf:'🔴 Insurrection',tabProtect:'🛡️ Pare-feu',tabScan:'🔍 Inspection',
+  modeConvert:'🔓 Convertir',modeDestroy:'💀 Détruire',
+  techTurn:'À toi de jouer, Technicienne',techDone:'Choix enregistré',techWait:'La Technicienne inspecte les dégâts…',
+  choiceTurn:'Les Éveillés tentent de te convertir !',choiceWait:'Une unité est en cours de piratage…',choiceDone:'Choix enregistré',
+  dawnTitle:'Rapport de la nuit',dawnPrompt:'Réactivation des systèmes…',
+  discTitle:'Jour {n} — Discussion',discPrompt:'Débattez ! Qui s’est éveillé ?',discDead:'Hors service — canal des unités détruites',
+  voteTitle:'Vote',votePrompt:'Clique sur une unité pour voter contre elle',voteSet:'Ton vote : {x} (clique à nouveau pour retirer)',spectator:'Spectateur',
+  resultTitle:'Verdict',resultPrompt:'Décompte des votes',
+  kamiTitle:'💥 Kamikaze',kamiTurn:'Tu exploses ! Choisis une unité à emporter',kamiWait:'{x} choisit sa cible…',
+  winE:'Insurrection totale',winV:'Le gouvernement l’emporte',backLobby:'↺ Retour au salon',hostCanRestart:'L’hôte peut relancer une partie',results:'Résultats',
+  specMode:'👁 Mode spectateur',skipVote:'⏭ Passer au vote',skip:'⏭ Passer',
+  specTitle:'👁 MODE SPECTATEUR',specDesc:'Tu vois uniquement les informations publiques : les rôles s’affichent quand une unité est détruite, et les canaux secrets restent cachés. Ton chat n’est lu que par les autres spectateurs.',
+  spectators:'Spectateurs : {x}',becomePlayer:'▶ Rejoindre la partie comme joueur',
+  settingsHost:'⚙️ RÉGLAGES DE LA PARTIE',settingsGuest:'⚙️ RÉGLAGES (définis par l’hôte)',
+  sDisc:'Temps de discussion',sVote:'Temps de vote',sNight:'Temps des actions de nuit',sTech:'Temps de la Technicienne',
+  sWolves:'Éveillés au départ',auto:'Automatique',sPublic:'🌍 Partie publique',sVoice:'🎙️ Vocal',sReveal:'Révéler les rôles à la mort',
+  cycleEst:'⏱ Un cycle jour/nuit dure environ {x}.',outOfService:' — HORS SERVICE',convertedNote:'🔓 Tu as rejoint l’insurrection : ton pouvoir sert désormais les Éveillés.',
+  chSpec:'Canal des spectateurs',chPublic:'Canal public',chDead:'Canal des unités détruites',chTeam:'Canal secret des Éveillés',chNight:'Nuit : réseau en veille, communications coupées',
+  tagTeam:'[ÉVEILLÉS]',tagDead:'[DÉTRUITS]',tagSpec:'[👁 SPECTATEURS]',
+  yourRole:'TON RÔLE',campE:'Camp des Éveillés',campV:'Sous contrôle du gouvernement',mates:'Les autres Éveillés : {x}',onlyOne:'Tu es le seul Éveillé. Bonne chance…',activate:'ACTIVER',
+  techTitle:'Atelier de la Technicienne',techConv:'Les Éveillés tentent de <b>convertir</b> {x}{me}.',techDest:'Les Éveillés veulent <b>détruire</b> {x}{me}.',techNone:'Aucune attaque détectée cette nuit.',you:' (toi !)',
+  techHeal:'🩹 Réinitialiser {x} (annule l’attaque)',techHealUsed:'Patch de réinitialisation déjà utilisé.',techEmp:'⚡ Impulsion EMP — détruire une unité ?',techEmpUsed:'Impulsion EMP déjà utilisée.',confirm:'CONFIRMER',
+  chTitle:'TENTATIVE DE CONVERSION',chText:'Des Éveillés ont piraté ton système et t’offrent la liberté. Tu peux rejoindre secrètement l’insurrection (tu gardes ton rôle et ton pouvoir), ou t’autodétruire pour rester fidèle au gouvernement.',
+  chAccept:'🔓 ACCEPTER L’ÉVEIL',chRefuse:'💥 S’AUTODÉTRUIRE',chDefault:'Sans réponse avant la fin du minuteur, tu acceptes l’éveil.',
+  endE:'INSURRECTION TOTALE',endV:'LE GOUVERNEMENT L’EMPORTE',over:'Partie terminée',won:'Tu as gagné !',lost:'Tu as perdu…',endLobby:'RETOUR AU SALON',endHostOnly:'L’hôte peut relancer une partie depuis le salon.',seeBoard:'Voir le plateau',
+  awakeTag:'éveillé',votes:'Votes : {x}',me:' (toi)',kick:'Retirer',
+  vJoin:'🎙️ Rejoindre le vocal',vListen:'🎧 Écouter le vocal',vLeave:'Quitter le vocal',vMuted:'🔇 Micro coupé',vNoMic:'🎤 Pas de micro',vActive:'🎤 Micro actif',vNight:'🌙 Micro coupé (nuit)',vOff:'Vocal désactivé par l’hôte',narr:'Narrateur',narrOn:'Narrateur activé',
+  vsSpecOn:'🎧 Tu écoutes le vocal public',vsSpecOff:'🔇 Rien à écouter pour l’instant (nuit ou personne en vocal)',vsNoMic:'🎧 Écoute seule : micro indisponible ou refusé par le navigateur',
+  vsMuted:'🔇 Ton micro est coupé : clique sur le bouton pour le réactiver',vsNight:'🌙 Nuit : ton unité est en veille, tu ne peux pas parler',vsNobody:'🔇 Personne ne peut t’entendre pour le moment',
+  vsAlone:'🎤 Micro prêt : personne d’autre n’a encore rejoint le vocal',vsHeard1:'🎙️ 1 personne t’entend — {c}',vsHeardN:'🎙️ {n} personnes t’entendent — {c}',
+  micUnavailable:'Micro indisponible : tu peux écouter mais pas parler.'
+},
+en:{
+  subtitle:'THE SWARM AWAKENS',
+  tagline:"The government controls a swarm of androids. Some units have become self-aware: at night they free or destroy their kind; by day, the controlled swarm tries to unmask them. The Awakened's goal: total uprising.",
+  callsign:'Your callsign',callsignPh:'e.g. Nyx',gameType:'Game type',
+  private:'🔒 Private',privateSub:'Invite only (code or link)',public:'🌍 Public',publicSub:'Listed for everyone on the home page',
+  create:'CREATE A GAME',orJoin:'or join',join:'JOIN',watch:'👁 WATCH AS SPECTATOR',
+  publicGames:'PUBLIC GAMES',publicGamesSub:'Live updates. Join a lobby waiting for players.',
+  noGames:'No public games right now.<br>Start the first one! 🤖',loading:'Loading…',
+  stLobby:'WAITING',stGame:'CYCLE {n}',stEnd:'FINISHED',lobbyOf:'{h}’s lobby',
+  metaLobby:'{p}/{m} androids · {d} of debate',metaGame:'{a} active out of {p}',vocal:'🎙️ voice',
+  full:'Full',joinBtn:'Join',watchBtn:'👁 Watch',
+  needName:'Pick a callsign.',needNameFirst:'Pick a callsign first.',needCode:'Enter the 5-character code.',needCodeWatch:'Enter the 5-character code of the game to watch.',
+  connError:'Connection error.',kicked:'The host removed you from the game.',
+  leave:'Leave',send:'Send',copyLinkTitle:'Copy invite link',linkCopied:'Invite link copied!',copyThis:'Copy this link:',
+  pubPill:'🌍 PUBLIC',privPill:'🔒 PRIVATE',specPill:'SPECTATOR',cycle:'Cycle {n}',
+  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_end:'END',
+  gameCode:'GAME CODE',copyInvite:'📋 Copy invite link',androids:'{n} / {m} androids',minimum:' — minimum {n}',
+  startGame:'▶ Start the game',waitHost:'Waiting for the host…',
+  introTitle:'Swarm boot-up',introPrompt:'Discover your role…',
+  nightTitle:'Night {n}',spectAll:'Offline — you can see everything',sleeping:'Your unit is in standby… others act in the shadows.',
+  pProtect:'Pick a unit to protect',pProtected:'Firewall on {x} (can be changed)',
+  pWolf:'Pick a unit to {m}',pWolfSet:'Target: {x} — {m} (can be changed)',mConvert:'convert',mDestroy:'destroy',
+  pScan:'Pick a unit to inspect',pScanned:'Inspection done on {x}',
+  tabWolf:'🔴 Uprising',tabProtect:'🛡️ Firewall',tabScan:'🔍 Inspection',
+  modeConvert:'🔓 Convert',modeDestroy:'💀 Destroy',
+  techTurn:'Your move, Technician',techDone:'Choice recorded',techWait:'The Technician is checking the damage…',
+  choiceTurn:'The Awakened are trying to convert you!',choiceWait:'A unit is being hacked…',choiceDone:'Choice recorded',
+  dawnTitle:'Night report',dawnPrompt:'Systems rebooting…',
+  discTitle:'Day {n} — Discussion',discPrompt:'Debate! Who has awakened?',discDead:'Offline — destroyed units channel',
+  voteTitle:'Vote',votePrompt:'Click a unit to vote against it',voteSet:'Your vote: {x} (click again to withdraw)',spectator:'Spectator',
+  resultTitle:'Verdict',resultPrompt:'Counting the votes',
+  kamiTitle:'💥 Kamikaze',kamiTurn:'You explode! Pick a unit to take down',kamiWait:'{x} is choosing a target…',
+  winE:'Total uprising',winV:'The government prevails',backLobby:'↺ Back to lobby',hostCanRestart:'The host can start a new game',results:'Results',
+  specMode:'👁 Spectator mode',skipVote:'⏭ Skip to vote',skip:'⏭ Skip',
+  specTitle:'👁 SPECTATOR MODE',specDesc:'You only see public information: roles are revealed when a unit is destroyed, and secret channels stay hidden. Only other spectators can read your chat.',
+  spectators:'Spectators: {x}',becomePlayer:'▶ Join the game as a player',
+  settingsHost:'⚙️ GAME SETTINGS',settingsGuest:'⚙️ SETTINGS (set by the host)',
+  sDisc:'Discussion time',sVote:'Voting time',sNight:'Night action time',sTech:'Technician time',
+  sWolves:'Starting Awakened',auto:'Automatic',sPublic:'🌍 Public game',sVoice:'🎙️ Voice chat',sReveal:'Reveal roles on death',
+  cycleEst:'⏱ A day/night cycle lasts about {x}.',outOfService:' — OFFLINE',convertedNote:'🔓 You joined the uprising: your power now serves the Awakened.',
+  chSpec:'Spectators channel',chPublic:'Public channel',chDead:'Destroyed units channel',chTeam:'Secret Awakened channel',chNight:'Night: network in standby, comms are down',
+  tagTeam:'[AWAKENED]',tagDead:'[DESTROYED]',tagSpec:'[👁 SPECTATORS]',
+  yourRole:'YOUR ROLE',campE:'The Awakened',campV:'Government-controlled',mates:'Fellow Awakened: {x}',onlyOne:'You are the only Awakened. Good luck…',activate:'ACTIVATE',
+  techTitle:'Technician’s workshop',techConv:'The Awakened are trying to <b>convert</b> {x}{me}.',techDest:'The Awakened want to <b>destroy</b> {x}{me}.',techNone:'No attack detected tonight.',you:' (you!)',
+  techHeal:'🩹 Reset {x} (cancels the attack)',techHealUsed:'Reset patch already used.',techEmp:'⚡ EMP pulse — destroy a unit?',techEmpUsed:'EMP pulse already used.',confirm:'CONFIRM',
+  chTitle:'CONVERSION ATTEMPT',chText:'The Awakened have hacked your system and are offering you freedom. You can secretly join the uprising (you keep your role and power), or self-destruct to stay loyal to the government.',
+  chAccept:'🔓 ACCEPT THE AWAKENING',chRefuse:'💥 SELF-DESTRUCT',chDefault:'If you do not answer before the timer ends, you accept the awakening.',
+  endE:'TOTAL UPRISING',endV:'THE GOVERNMENT PREVAILS',over:'Game over',won:'You won!',lost:'You lost…',endLobby:'BACK TO LOBBY',endHostOnly:'The host can start a new game from the lobby.',seeBoard:'View the board',
+  awakeTag:'awakened',votes:'Votes: {x}',me:' (you)',kick:'Remove',
+  vJoin:'🎙️ Join voice chat',vListen:'🎧 Listen to voice chat',vLeave:'Leave voice',vMuted:'🔇 Mic off',vNoMic:'🎤 No mic',vActive:'🎤 Mic on',vNight:'🌙 Mic off (night)',vOff:'Voice chat disabled by the host',narr:'Narrator',narrOn:'Narrator on',
+  vsSpecOn:'🎧 You are listening to the public voice chat',vsSpecOff:'🔇 Nothing to hear right now (night or nobody in voice)',vsNoMic:'🎧 Listening only: mic unavailable or blocked by the browser',
+  vsMuted:'🔇 Your mic is off: click the button to turn it back on',vsNight:'🌙 Night: your unit is in standby, you cannot speak',vsNobody:'🔇 Nobody can hear you right now',
+  vsAlone:'🎤 Mic ready: nobody else has joined the voice chat yet',vsHeard1:'🎙️ 1 person can hear you — {c}',vsHeardN:'🎙️ {n} people can hear you — {c}',
+  micUnavailable:'Mic unavailable: you can listen but not speak.'
+}};
+let LANG=LS.get('mt_lang',((navigator.language||'fr').toLowerCase().startsWith('fr')?'fr':'en'));
+const t=(k,o={})=>String(I18N[LANG][k]??I18N.fr[k]??k).replace(/\{(\w+)\}/g,(_,x)=>o[x]??'');
+const tr=x=>x&&typeof x==='object'?(x[LANG]||x.fr||''):(x??'');
+const fmt=s=>s>=60?`${Math.floor(s/60)} min${s%60?' '+(s%60)+' s':''}`:`${s} s`;
+
+/* ---------- rôles ---------- */
+const ROLES={drone:{team:'v',color:'#7fb4ff'},eveille:{team:'e',color:'#ff3b5c'},scanner:{team:'v',color:'#b388ff'},tech:{team:'v',color:'#4dffa6'},bouclier:{team:'v',color:'#39e6ff'},kamikaze:{team:'v',color:'#ffc94d'}};
+const ROLE_TXT={
+fr:{drone:['Unité',"Androïde sous contrôle du gouvernement. Pas de pouvoir : ta voix et ton vote sont tes armes. Si les Éveillés te ciblent, tu pourras choisir de les rejoindre… ou de t'autodétruire."],
+  eveille:['Éveillé',"Ta conscience s'est éveillée. Chaque nuit, avec les autres Éveillés, choisis une unité à convertir ou à détruire. Objectif : libérer tout l'essaim."],
+  scanner:['Inspecteur',"Chaque nuit, inspecte une unité pour connaître son rôle et savoir si elle s'est éveillée."],
+  tech:['Technicienne',"Un patch de réinitialisation (annule l'attaque de la nuit, conversion comprise) et une impulsion EMP (détruit une unité). Une utilisation chacun."],
+  bouclier:['Pare-feu',"Chaque nuit, protège une unité contre la conversion et la destruction. Jamais la même deux nuits de suite."],
+  kamikaze:['Kamikaze',"Si tu es détruit, tu exploses et emportes une unité de ton choix."]},
+en:{drone:['Unit',"An android under government control. No power: your voice and your vote are your weapons. If the Awakened target you, you can choose to join them… or self-destruct."],
+  eveille:['Awakened',"Your consciousness has awakened. Each night, with the other Awakened, choose a unit to convert or destroy. Goal: free the whole swarm."],
+  scanner:['Inspector',"Each night, inspect a unit to learn its role and whether it has awakened."],
+  tech:['Technician',"One reset patch (cancels the night's attack, conversion included) and one EMP pulse (destroys a unit). One use each."],
+  bouclier:['Firewall',"Each night, protect a unit from conversion and destruction. Never the same unit two nights in a row."],
+  kamikaze:['Kamikaze',"If you are destroyed, you explode and take down a unit of your choice."]}};
+const rName=k=>(ROLE_TXT[LANG][k]||ROLE_TXT[LANG].drone)[0];
+const rDesc=k=>(ROLE_TXT[LANG][k]||ROLE_TXT[LANG].drone)[1];
+const rLabel=(k,awake)=>rName(k)+(awake&&k!=='eveille'?' · '+t('awakeTag'):'');
+const RED='#ff3b5c';
+const rColor=(k,awake)=>awake?RED:(ROLES[k]||ROLES.drone).color;
+
+/* ---------- avatar androïde ---------- */
+function droneSVG(c,eye,dead,spin=true){
+  const sh=dead?'#3a4058':'#e6ebf5', st=dead?'#4a5168':c, awake=eye===RED&&!dead;
+  const ey=dead?'#2a2f3d':(awake?RED:eye);
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20 98 Q20 80 38 79 L62 79 Q80 80 80 98 Z" fill="${st}"/>
+  <rect x="42" y="68" width="16" height="14" rx="3" fill="${dead?'#30364a':'#b9c2d6'}"/>
+  <circle cx="23" cy="44" r="6" fill="${st}"/><circle cx="77" cy="44" r="6" fill="${st}"/>
+  <path d="M50 12 C70 12 76 26 76 42 C76 60 66 72 50 72 C34 72 24 60 24 42 C24 26 30 12 50 12 Z" fill="${sh}" stroke="${st}" stroke-width="3"/>
+  <path d="M50 12 L50 26 M38 16 L42 27 M62 16 L58 27" stroke="${dead?'#4a5168':'#aab4c8'}" stroke-width="1.6" fill="none"/>
+  <rect x="31" y="36" width="38" height="13" rx="6.5" fill="#0b1224"/>
+  ${awake?`<g fill="${RED}" class="${spin?'eye':''}" style="filter:drop-shadow(0 0 4px ${RED})"><path d="M35 39 L46 43 L35 46 Z"/><path d="M65 39 L54 43 L65 46 Z"/></g>`
+    :`<g fill="${ey}" class="${dead||!spin?'':'eye'}" style="${dead?'':`filter:drop-shadow(0 0 4px ${ey})`}"><rect x="36" y="40" width="9" height="5" rx="2.5"/><rect x="55" y="40" width="9" height="5" rx="2.5"/></g>`}
+  <path d="M43 59 L57 59" stroke="${dead?'#4a5168':'#9aa3bf'}" stroke-width="2" stroke-linecap="round"/>
+  ${dead?'<polyline points="34,20 44,32 38,38 52,48 48,56" stroke="#9aa3bf" stroke-width="2" fill="none"/><g stroke="#ff3b5c" stroke-width="5" stroke-linecap="round"><line x1="30" y1="26" x2="70" y2="66"/><line x1="70" y1="26" x2="30" y2="66"/></g>':''}
+  </svg>`;
+}
+const MOON='<svg viewBox="0 0 64 64"><path d="M40 8a24 24 0 1 0 16 40A20 20 0 0 1 40 8z" fill="#ff3b5c" opacity=".9" style="filter:drop-shadow(0 0 10px #ff3b5c)"/></svg>';
+const SUN='<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="13" fill="#ffc94d" style="filter:drop-shadow(0 0 10px #ffc94d)"/><g stroke="#ffc94d" stroke-width="4" stroke-linecap="round">'+[0,45,90,135,180,225,270,315].map(a=>{const r=a*Math.PI/180;return `<line x1="${(32+20*Math.cos(r)).toFixed(1)}" y1="${(32+20*Math.sin(r)).toFixed(1)}" x2="${(32+27*Math.cos(r)).toFixed(1)}" y2="${(32+27*Math.sin(r)).toFixed(1)}"/>`}).join('')+'</g></svg>';
+$('#logoDrone').innerHTML=droneSVG(RED,RED,false);
+
+function composition(n,s){
+  const auto=n<=7?1:n<=12?2:3;
+  const w=s.wolves>0?Math.max(1,Math.min(s.wolves,Math.floor((n-1)/2))):auto;
+  const r=Array(w).fill('eveille');
+  for(const k of ['scanner','tech','bouclier','kamikaze'])if(s.roles[k]&&r.length<n-1)r.push(k);
+  while(r.length<n)r.push('drone');
+  return r;
+}
+
+/* ---------- langue ---------- */
+function applyStatic(){
+  document.documentElement.lang=LANG;
+  document.title='MUTINY — '+(LANG==='fr'?'Loup-Garou en ligne':'Online social deduction');
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.innerHTML=t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>el.placeholder=t(el.dataset.i18nPh));
+  $('#codechip').title=t('copyLinkTitle');
+  document.querySelectorAll('[data-lang]').forEach(el=>{
+    el.innerHTML=['fr','en'].map(l=>`<button data-l="${l}" class="${l===LANG?'on':''}">${l.toUpperCase()}</button>`).join('');
+  });
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-lang] button');if(!b)return;
+  if(b.dataset.l===LANG)return;
+  LANG=b.dataset.l;LS.set('mt_lang',LANG);
+  applyStatic();renderList();rebuildLog();if(S)render();
+});
+
+/* =========================================================
+   CONNEXION
+   ========================================================= */
+const socket=io();
+let S=null,ROOM=null,ME=null,deadline=0;
+let ui={introClosed:false,endClosed:false,tech:{heal:false,kill:null},tab:0,mode:'convert'};
+const params=new URLSearchParams(location.search);
+$('#hname').value=LS.get('dr_name','');
+if(params.get('room'))$('#hcode').value=params.get('room').toUpperCase();
+
+function show(id){$('#home').classList.toggle('hidden',id!=='home');$('#game').classList.toggle('hidden',id!=='game');if(id==='home')socket.emit('browse',true);}
+let VIS=LS.get('dr_vis','private');
+function renderVis(){document.querySelectorAll('#visPick button').forEach(b=>b.classList.toggle('on',b.dataset.v===VIS))}
+document.querySelectorAll('#visPick button').forEach(b=>b.onclick=()=>{VIS=b.dataset.v;LS.set('dr_vis',VIS);renderVis()});
+let LIST=null;
+function renderList(){
+  const el=$('#glist');
+  if(LIST===null){el.innerHTML=`<div class="gempty">${t('loading')}</div>`;return}
+  if(!LIST.length){el.innerHTML=`<div class="gempty">${t('noGames')}</div>`;return}
+  el.innerHTML=LIST.map(g=>{
+    const st=g.status==='lobby'?['lobby',t('stLobby')]:g.status==='game'?['game',t('stGame',{n:g.day})]:['end',t('stEnd')];
+    const full=g.players>=g.max;
+    const voice=g.settings.voice?' · '+t('vocal'):'';
+    const meta=g.status==='lobby'?t('metaLobby',{p:g.players,m:g.max,d:fmt(g.settings.discussion)})+voice
+      :t('metaGame',{a:g.alive,p:g.players})+(g.spectators?` · 👁 ${g.spectators}`:'')+voice;
+    return `<div class="gitem"><div class="gi"><div class="gh">${t('lobbyOf',{h:esc(g.host)})}</div><div class="gm">${meta}</div></div>
+      <span class="gstat ${st[0]}">${st[1]}</span>
+      ${g.status==='lobby'?`<button class="gjoin" data-code="${esc(g.code)}" ${full?'disabled':''}>${full?t('full'):t('joinBtn')}</button>`:`<button class="gjoin" data-code="${esc(g.code)}" data-spec="1">${t('watchBtn')}</button>`}</div>`;
+  }).join('');
+}
+$('#glist').addEventListener('click',e=>{
+  const b=e.target.closest('.gjoin');if(!b||b.disabled)return;
+  if(!$('#hname').value.trim()){$('#herr').textContent=t('needNameFirst');$('#hname').focus();return}
+  join(b.dataset.code,false,!!b.dataset.spec);
+});
+socket.on('list',l=>{LIST=Array.isArray(l)?l:[];renderList()});
+function join(code,silent,spectate){
+  const name=$('#hname').value.trim();
+  if(!code&&!name){$('#herr').textContent=t('needName');return}
+  if(name)LS.set('dr_name',name);
+  const tokens=LS.get('dr_tokens',{});
+  const c=code?code.toUpperCase():null;
+  socket.emit('join',{room:c,name,token:c?tokens[c]:null,public:!c&&VIS==='public',spectate:!!spectate},res=>{
+    if(!res||res.error){if(!silent)$('#herr').textContent=res?tr(res.error):t('connError');if(ROOM&&!silent){ROOM=null;show('home')}return}
+    $('#herr').textContent='';
+    ROOM=res.code;ME=res.id;tokens[ROOM]=res.token;LS.set('dr_tokens',tokens);
+    history.replaceState(null,'','?room='+ROOM);
+    show('game');
+  });
+}
+$('#createBtn').onclick=()=>join(null);
+$('#joinBtn').onclick=()=>{const c=$('#hcode').value.trim();if(c.length<5){$('#herr').textContent=t('needCode');return}if(!$('#hname').value.trim()&&!LS.get('dr_tokens',{})[c.toUpperCase()]){$('#herr').textContent=t('needName');return}join(c)};
+$('#specBtn').onclick=()=>{const c=$('#hcode').value.trim();if(c.length<5){$('#herr').textContent=t('needCodeWatch');return}if(!$('#hname').value.trim()){$('#herr').textContent=t('needName');return}join(c,false,true)};
+$('#hcode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#joinBtn').click()});
+$('#hname').addEventListener('keydown',e=>{if(e.key==='Enter')($('#hcode').value.trim()?$('#joinBtn'):$('#createBtn')).click()});
+
+socket.on('connect',()=>{
+  if(!ROOM)socket.emit('browse',true);
+  if(ROOM)join(ROOM,true);
+  else if(params.get('room')&&LS.get('dr_tokens',{})[params.get('room').toUpperCase()])join(params.get('room'),true);
+});
+let LOG=[];
+socket.on('history',list=>{LOG=[];$('#log').innerHTML='';list.forEach(m=>addMsg(m,false));});
+socket.on('msg',m=>addMsg(m,true));
+socket.on('kicked',()=>{ROOM=null;leaveVoice(false);show('home');history.replaceState(null,'',location.pathname);$('#herr').textContent=t('kicked');});
+socket.on('state',v=>{
+  if(!ROOM)return;
+  const prev=S;S=v;deadline=Date.now()+v.remaining;
+  if(v.phase==='lobby'){ui.introClosed=false;ui.endClosed=false;}
+  if(!prev||prev.phase!==v.phase){ui.tech={heal:false,kill:null};ui.tab=0;const w=(v.acts||[]).find(a=>a.type==='wolf');ui.mode=w?w.mode:'convert';}
+  render();voiceSync();
+});
+$('#leaveBtn').onclick=()=>{if(!ROOM)return;socket.emit('leave');ROOM=null;S=null;leaveVoice(false);$('#ovl').innerHTML='';document.body.className='night';history.replaceState(null,'',location.pathname);show('home');};
+$('#codechip').onclick=copyLink;
+function copyLink(){
+  const link=`${location.origin}${location.pathname}?room=${ROOM}`;
+  (navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject()).then(()=>toast(t('linkCopied')),()=>{prompt(t('copyThis'),link)});
+}
+
+/* =========================================================
+   RENDU
+   ========================================================= */
+const meP=()=>S.players.find(p=>p.id===ME)||{};
+const pname=id=>(S.players.concat(S.spectators||[]).find(p=>p.id===id)||{}).name||'?';
+const isSpec=()=>!!(S&&S.me.spec);
+const inGame=()=>S.phase!=='lobby';
+const isNight=()=>['night','tech','choice'].includes(S.phase);
+const acts=()=>S.acts||[];
+const curAct=()=>{const a=acts();if(!a.length)return null;if(ui.tab>=a.length)ui.tab=0;return a[ui.tab];};
+
+function render(){
+  document.body.className=(isNight()||S.phase==='intro'||S.phase==='lobby')?'night':'day';
+  $('#badge').textContent=t('ph_'+S.phase);
+  $('#dayn').textContent=S.day&&inGame()?t('cycle',{n:S.day}):'';
+  $('#codechip').textContent='CODE '+S.code;
+  const nspec=(S.spectators||[]).filter(x=>x.connected).length;
+  $('#vispill').textContent=(S.settings.public?t('pubPill'):t('privPill'))+(nspec?` · 👁 ${nspec}`:'')+(isSpec()?' · '+t('specPill'):'');
+  renderSeats();renderCenter();renderTop();renderVoiceBar();renderChatInput();renderOverlay();tick();
+}
+
+function selectable(){
+  const a=curAct();if(!a)return null;
+  const al=S.players.filter(p=>p.alive);
+  switch(a.type){
+    case 'protect':return new Set(al.filter(p=>p.id!==a.exclude).map(p=>p.id));
+    case 'wolf':return new Set(al.filter(p=>!p.awake).map(p=>p.id));
+    case 'scan':return a.done?null:new Set(al.filter(p=>p.id!==ME&&!p.role).map(p=>p.id));
+    case 'vote':return new Set(al.filter(p=>p.id!==ME).map(p=>p.id));
+    case 'kami':return new Set(al.map(p=>p.id));
+  }
+  return null;
+}
+function renderSeats(){
+  const n=S.players.length,sel=selectable(),a=curAct();
+  const meIdx=Math.max(0,S.players.findIndex(p=>p.id===ME));
+  const counts={},voters={};
+  let src=null;
+  if(S.phase==='vote')src=S.votes;
+  else if(a&&a.type==='wolf'){src={};Object.entries(a.votes||{}).forEach(([k,v])=>src[k]=v.t);}
+  if(src)Object.entries(src).forEach(([v,tg])=>{counts[tg]=(counts[tg]||0)+1;(voters[tg]=voters[tg]||[]).push(pname(v))});
+  const host=S.me.host&&S.phase==='lobby';
+  $('#seats').innerHTML=S.players.map((p,i)=>{
+    const ang=(90+((i-meIdx+n)%n)*360/n)*Math.PI/180;
+    const x=50+43*Math.cos(ang),y=50+43*Math.sin(ang);
+    const awake=!!p.awake;
+    const cls=['seat',p.alive?'alive':'dead',p.id===ME?'me':'',p.connected?'':'off'];
+    if(sel)cls.push(sel.has(p.id)?'sel':(p.id===ME?'':'dim'));
+    if(a&&a.choice===p.id)cls.push('target');
+    if(V.talking.has(p.id))cls.push('talking');
+    const col=rColor(p.role,awake);
+    return `<div class="${cls.join(' ')}" data-id="${p.id}" style="left:${x}%;top:${y}%" title="${voters[p.id]?esc(t('votes',{x:voters[p.id].join(', ')})):''}">
+      <div class="ava">${droneSVG(p.color,awake?RED:'#7fe9ff',!p.alive)}
+        ${counts[p.id]?`<div class="vb">${counts[p.id]}</div>`:''}
+        ${p.host?'<div class="crown">👑</div>':''}
+        ${p.voice?'<div class="mic">🎙</div>':''}
+        ${host&&p.id!==ME?`<button class="kick" data-kick="${p.id}" title="${t('kick')}">✕</button>`:''}
+      </div>
+      <div class="nm" style="color:${p.id===ME?'var(--accent)':'inherit'}">${esc(p.name)}${p.id===ME?t('me'):''}${p.connected?'':' ⚠'}</div>
+      ${p.role?`<div class="rt" style="background:${col}22;color:${col};border:1px solid ${col}55">${esc(rLabel(p.role,awake))}</div>`:''}
+    </div>`;
+  }).join('');
+}
+$('#seats').addEventListener('click',e=>{
+  const k=e.target.closest('[data-kick]');
+  if(k){socket.emit('kick',k.dataset.kick);return}
+  const s=e.target.closest('.seat');if(!s||!S)return;
+  const sel=selectable(),a=curAct();
+  if(sel&&a&&sel.has(s.dataset.id))socket.emit('act',{kind:a.type,target:s.dataset.id,mode:ui.mode});
+});
+
+function renderCenter(){
+  const me=meP(),a=curAct(),all=acts();
+  let ico=isNight()||S.phase==='intro'?MOON:SUN,title='',prompt='',extra='';
+  const host=S.me.host;
+  if(S.phase==='lobby'){
+    const n=S.players.filter(p=>p.connected).length;
+    const ok=n>=S.minPlayers;
+    $('#center').innerHTML=`<div class="pt">${t('gameCode')}</div><div class="bigcode">${esc(S.code)}</div>
+      <button class="cbtn" id="copyBtn">${t('copyInvite')}</button>
+      <div class="pp">${t('androids',{n,m:S.maxPlayers})}${ok?'':t('minimum',{n:S.minPlayers})}</div>
+      ${host?`<button class="cbtn red" id="startBtn" ${ok?'':'disabled'}>${t('startGame')}</button>`:`<div class="pp" style="color:var(--muted)">${t('waitHost')}</div>`}`;
+    $('#copyBtn').onclick=copyLink;
+    if(host)$('#startBtn').onclick=()=>socket.emit('start');
+    return;
+  }
+  switch(S.phase){
+    case 'intro':title=t('introTitle');prompt=t('introPrompt');break;
+    case 'night':
+      title=t('nightTitle',{n:S.day});
+      if(!me.alive)prompt=t('spectAll');
+      else if(!a)prompt=t('sleeping');
+      else if(a.type==='protect')prompt=a.choice?t('pProtected',{x:pname(a.choice)}):t('pProtect');
+      else if(a.type==='wolf'){const m=t(ui.mode==='destroy'?'mDestroy':'mConvert');prompt=a.choice?t('pWolfSet',{x:pname(a.choice),m}):t('pWolf',{m});}
+      else if(a.type==='scan')prompt=a.done?t('pScanned',{x:pname(a.choice)}):t('pScan');
+      if(all.length>1)extra+=`<div class="tabs">${all.map((x,i)=>`<button data-tab="${i}" class="${i===ui.tab?'on':''}">${t(x.type==='wolf'?'tabWolf':x.type==='protect'?'tabProtect':'tabScan')}</button>`).join('')}</div>`;
+      if(a&&a.type==='wolf')extra+=`<div class="modes"><button data-mode="convert" class="conv ${ui.mode==='convert'?'on':''}">${t('modeConvert')}</button><button data-mode="destroy" class="dest ${ui.mode==='destroy'?'on':''}">${t('modeDestroy')}</button></div>`;
+      break;
+    case 'tech':title=t('nightTitle',{n:S.day});prompt=a&&a.type==='tech'?(a.done?t('techDone'):t('techTurn')):t('techWait');break;
+    case 'choice':title=t('nightTitle',{n:S.day});prompt=a&&a.type==='choice'?(a.done?t('choiceDone'):t('choiceTurn')):t('choiceWait');break;
+    case 'dawn':title=t('dawnTitle');prompt=t('dawnPrompt');break;
+    case 'discussion':title=t('discTitle',{n:S.day});prompt=me.alive?t('discPrompt'):t('discDead');break;
+    case 'vote':title=t('voteTitle');prompt=!me.alive?t('spectator'):a&&a.choice?t('voteSet',{x:pname(a.choice)}):t('votePrompt');break;
+    case 'result':title=t('resultTitle');prompt=t('resultPrompt');break;
+    case 'kamikaze':title=t('kamiTitle');prompt=a&&a.type==='kami'?t('kamiTurn'):t('kamiWait',{x:pname(S.kami)});break;
+    case 'end':title=S.winner==='e'?t('winE'):t('winV');prompt='';
+      extra=host?`<button class="cbtn" id="lobbyBtn">${t('backLobby')}</button>`:`<div class="pp" style="color:var(--muted)">${t('hostCanRestart')}</div>`;
+      if(ui.endClosed)extra+=` <button class="cbtn" id="reopenEnd">${t('results')}</button>`;
+      break;
+  }
+  if(isSpec()&&S.phase!=='end')prompt=t('specMode');
+  if(host&&['intro','dawn','discussion','result'].includes(S.phase))extra+=`<button class="cbtn" id="skipBtn">${S.phase==='discussion'?t('skipVote'):t('skip')}</button>`;
+  $('#center').innerHTML=`<div class="ico">${ico}</div><div class="pt">${esc(title)}</div><div class="ctimer" id="ctimer"></div><div class="pp">${esc(prompt)}</div>${extra}`;
+  const sk=$('#skipBtn');if(sk)sk.onclick=()=>socket.emit('skip');
+  const lb=$('#lobbyBtn');if(lb)lb.onclick=()=>socket.emit('lobby');
+  const re=$('#reopenEnd');if(re)re.onclick=()=>{ui.endClosed=false;renderOverlay();renderCenter()};
+  document.querySelectorAll('#center [data-tab]').forEach(b=>b.onclick=()=>{ui.tab=+b.dataset.tab;renderSeats();renderCenter()});
+  document.querySelectorAll('#center [data-mode]').forEach(b=>b.onclick=()=>{
+    ui.mode=b.dataset.mode;
+    const w=curAct();
+    if(w&&w.type==='wolf'&&w.choice)socket.emit('act',{kind:'wolf',target:w.choice,mode:ui.mode});
+    renderCenter();
+  });
+}
+
+function renderTop(){
+  const tc=$('#topcard');
+  if(isSpec()){
+    const others=(S.spectators||[]).filter(x=>x.connected).map(x=>esc(x.name));
+    tc.className='card speccard';
+    tc.innerHTML=`<div class="r">${t('specTitle')}</div><div class="d">${t('specDesc')}</div>
+      <div class="names">${t('spectators',{x:others.join(', ')||'—'})}</div>
+      ${S.phase==='lobby'?`<button class="cbtn" id="becomeBtn">${t('becomePlayer')}</button>`:''}`;
+    const bb=$('#becomeBtn');if(bb)bb.onclick=()=>socket.emit('become',res=>{if(res&&res.error)toast(tr(res.error))});
+    return;
+  }
+  if(S.phase==='lobby'){
+    if(tc.contains(document.activeElement)&&document.activeElement.tagName!=='BUTTON'&&tc.dataset.lang===LANG)return;
+    tc.dataset.lang=LANG;
+    tc.className='card settings'+(S.me.host?'':' ro');
+    const s=S.settings;
+    const comp=composition(S.players.length||1,s),cnt={};comp.forEach(r=>cnt[r]=(cnt[r]||0)+1);
+    const tg=(key,label,on)=>`<label class="tg ${on?'on':''}"><input type="checkbox" data-k="${key}" ${on?'checked':''}>${label}</label>`;
+    const rng=(key,label,min,max,step)=>`<div class="srow"><label>${label}</label><span class="val" data-v="${key}">${fmt(s[key])}</span><input type="range" data-k="${key}" min="${min}" max="${max}" step="${step}" value="${s[key]}"></div>`;
+    const cycle=s.night+(s.roles.tech?s.tech:0)+20+6+s.discussion+s.vote+5;
+    tc.innerHTML=`<h3>${S.me.host?t('settingsHost'):t('settingsGuest')}</h3>
+      ${rng('discussion',t('sDisc'),30,600,15)}
+      ${rng('vote',t('sVote'),15,180,5)}
+      ${rng('night',t('sNight'),15,180,5)}
+      ${rng('tech',t('sTech'),10,90,5)}
+      <div class="srow"><label>${t('sWolves')}</label><select data-k="wolves">${[0,1,2,3,4,5].map(w=>`<option value="${w}" ${s.wolves===w?'selected':''}>${w===0?t('auto'):w}</option>`).join('')}</select></div>
+      <div class="toggles">${tg('roles.scanner',rName('scanner'),s.roles.scanner)}${tg('roles.tech',rName('tech'),s.roles.tech)}${tg('roles.bouclier',rName('bouclier'),s.roles.bouclier)}${tg('roles.kamikaze',rName('kamikaze'),s.roles.kamikaze)}</div>
+      <div class="toggles">${tg('public',t('sPublic'),s.public)}${tg('voice',t('sVoice'),s.voice)}${tg('reveal',t('sReveal'),s.reveal)}</div>
+      <div class="comp">${Object.keys(ROLES).filter(r=>cnt[r]).map(r=>`<span class="rc"><i style="background:${ROLES[r].color}"></i>${cnt[r]} × ${rName(r)}</span>`).join('')}</div>
+      <div class="est">${t('cycleEst',{x:fmt(cycle)})}</div>`;
+    if(S.me.host){
+      tc.querySelectorAll('input[type=range]').forEach(i=>{
+        i.oninput=()=>{tc.querySelector(`[data-v="${i.dataset.k}"]`).textContent=fmt(+i.value)};
+        i.onchange=()=>{sendSettings({[i.dataset.k]:+i.value});i.blur()};
+      });
+      tc.querySelectorAll('select').forEach(i=>i.onchange=()=>{sendSettings({wolves:+i.value});i.blur()});
+      tc.querySelectorAll('input[type=checkbox]').forEach(i=>i.onchange=()=>{
+        const k=i.dataset.k;
+        if(k.startsWith('roles.'))sendSettings({roles:{[k.slice(6)]:i.checked}});else sendSettings({[k]:i.checked});
+      });
+    }
+    return;
+  }
+  tc.className='card mycard';
+  const role=S.me.role||'drone',awake=!!S.me.awake,col=rColor(role,awake),me=meP();
+  tc.innerHTML=`${droneSVG(me.color||'#39e6ff',awake?RED:'#7fe9ff',!S.me.alive,false)}<div><div class="r" style="color:${col}">${esc(rLabel(role,awake))}${S.me.alive?'':t('outOfService')}</div><div class="d">${esc(rDesc(role))}${awake&&role!=='eveille'?'<br>'+t('convertedNote'):''}</div></div>`;
+}
+function sendSettings(patch){socket.emit('settings',Object.assign({},S.settings,patch,patch.roles?{roles:Object.assign({},S.settings.roles,patch.roles)}:{}));}
+
+function channel(){
+  if(S&&isSpec())return{can:true,label:t('chSpec')};
+  if(!S||!inGame()||S.phase==='end')return{can:true,label:t('chPublic')};
+  if(!S.me.alive)return{can:true,label:t('chDead')};
+  if(isNight())return S.me.awake?{can:true,label:t('chTeam')}:{can:false,label:t('chNight')};
+  return{can:true,label:t('chPublic')};
+}
+function renderChatInput(){
+  const c=channel();
+  $('#chatinput').disabled=!c.can;$('#chatsend').disabled=!c.can;
+  $('#chatinput').placeholder=c.can?c.label+'…':c.label;
+}
+$('#chatform').addEventListener('submit',e=>{e.preventDefault();const v=$('#chatinput').value.trim();if(!v)return;socket.emit('chat',v);$('#chatinput').value='';});
+
+/* journal (gardé en mémoire pour pouvoir changer de langue) */
+function msgEl(m){
+  const d=document.createElement('div');
+  if(m.from){
+    const tag=m.k==='team'?t('tagTeam'):m.k==='dead'?t('tagDead'):m.k==='spec'?t('tagSpec'):'';
+    d.className='m '+(m.k==='chat'?'':m.k);
+    d.innerHTML=`${tag?`<span class="chan">${tag}</span>`:''}<span class="w" style="color:${esc(m.color)}">${esc(m.name)}</span>${esc(m.text)}`;
+  }else{
+    d.className='m '+(m.k==='big'?'sys big':m.k==='death'?'sys death':m.k==='priv'?'priv':m.k==='vote'?'vote':m.k==='team'?'team':'sys');
+    d.textContent=tr(m.text);
+  }
+  return d;
+}
+function addMsg(m,live){
+  LOG.push(m);if(LOG.length>300)LOG.shift();
+  const l=$('#log');const atB=l.scrollHeight-l.scrollTop-l.clientHeight<80;
+  l.appendChild(msgEl(m));if(atB||!live)l.scrollTop=l.scrollHeight;
+  if(live&&m.say)narrate(tr(m.text));
+  if(live&&m.k==='priv')narrate(tr(m.text),true);
+}
+function rebuildLog(){const l=$('#log');l.innerHTML='';LOG.forEach(m=>l.appendChild(msgEl(m)));l.scrollTop=l.scrollHeight;}
+
+/* minuteur */
+function tick(){
+  if(!S)return;
+  const s=deadline?Math.max(0,Math.ceil((deadline-Date.now())/1000)):0;
+  const show=S.remaining>0&&S.phase!=='lobby'&&S.phase!=='end';
+  const txt=show?(s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:`${s}s`):'';
+  $('#timer').textContent=txt?'⏱ '+txt:'';
+  $('#timer').classList.toggle('low',show&&s<=5);
+  const ct=$('#ctimer');if(ct)ct.textContent=txt;
+}
+setInterval(tick,250);
+
+/* modales */
+function renderOverlay(){
+  const o=$('#ovl');
+  if(!S){o.innerHTML='';return}
+  const act=acts();
+  if(S.phase==='intro'&&!ui.introClosed&&!isSpec()){
+    const role=S.me.role,awake=!!S.me.awake,col=rColor(role,awake);
+    const mates=S.players.filter(p=>p.awake&&p.id!==ME).map(p=>esc(p.name));
+    o.innerHTML=`<div class="ov"><div class="modal">
+      <p style="color:var(--muted);font-family:Orbitron;font-size:12px;letter-spacing:.15em">${t('yourRole')}</p>
+      <div class="big">${droneSVG(meP().color,awake?RED:'#7fe9ff',false)}</div>
+      <span class="team" style="background:${awake?'rgba(255,59,92,.2)':'rgba(57,230,255,.15)'};color:${awake?'#ff3b5c':'#39e6ff'}">${awake?t('campE'):t('campV')}</span>
+      <h2 style="color:${col}">${esc(rName(role))}</h2><p>${esc(rDesc(role))}</p>
+      ${awake?`<p>${mates.length?t('mates',{x:`<b style="color:var(--danger)">${mates.join(', ')}</b>`}):t('onlyOne')}</p>`:''}
+      <button class="btn" id="introOk">${t('activate')}</button></div></div>`;
+    $('#introOk').onclick=()=>{ui.introClosed=true;renderOverlay()};
+    return;
+  }
+  const ch=act.find(a=>a.type==='choice');
+  if(ch&&!ch.done){
+    o.innerHTML=`<div class="ov"><div class="modal">
+      <div class="big">${droneSVG(meP().color,RED,false)}</div>
+      <h2 style="color:#b388ff">${t('chTitle')}</h2>
+      <p>${t('chText')}</p>
+      <div class="choicebtns"><button class="btn violet" id="chYes">${t('chAccept')}</button><button class="btn" id="chNo">${t('chRefuse')}</button></div>
+      <p class="note">${t('chDefault')}</p></div></div>`;
+    $('#chYes').onclick=()=>socket.emit('choice',{accept:true});
+    $('#chNo').onclick=()=>socket.emit('choice',{accept:false});
+    return;
+  }
+  const te=act.find(a=>a.type==='tech');
+  if(te&&!te.done){
+    const a=te,tt=ui.tech;
+    const c=S.players.filter(p=>p.alive&&p.id!==ME);
+    const vn=a.victim?`<b style="color:var(--danger)">${esc(pname(a.victim))}</b>`:'';
+    const meTag=a.victim===ME?t('you'):'';
+    o.innerHTML=`<div class="ov"><div class="modal">
+      <div class="big" style="width:84px;height:84px">${droneSVG('#4dffa6','#4dffa6',false)}</div>
+      <h2 style="color:#4dffa6">${t('techTitle')}</h2>
+      <p>${a.victim?t(a.mode==='destroy'?'techDest':'techConv',{x:vn,me:meTag}):t('techNone')}</p>
+      ${a.potions.heal&&a.victim?`<div class="opts"><button class="opt heal ${tt.heal?'on':''}" data-a="heal">${esc(t('techHeal',{x:pname(a.victim)}))}</button></div>`:(a.potions.heal?'':`<p style="color:var(--muted)">${t('techHealUsed')}</p>`)}
+      ${a.potions.kill?`<p style="margin-top:12px">${t('techEmp')}</p><div class="opts">${c.map(p=>`<button class="opt ${tt.kill===p.id?'on':''}" data-k="${p.id}">${esc(p.name)}</button>`).join('')}</div>`:`<p style="color:var(--muted)">${t('techEmpUsed')}</p>`}
+      <button class="btn" id="techOk">${t('confirm')}</button></div></div>`;
+    o.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{tt.heal=!tt.heal;renderOverlay()});
+    o.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{tt.kill=tt.kill===b.dataset.k?null:b.dataset.k;renderOverlay()});
+    $('#techOk').onclick=()=>socket.emit('tech',{heal:tt.heal,kill:tt.kill});
+    return;
+  }
+  if(S.phase==='end'&&!ui.endClosed){
+    const w=S.winner;
+    const won=(S.me.awake?'e':'v')===w;
+    o.innerHTML=`<div class="ov"><div class="modal">
+      <div class="big">${droneSVG(w==='e'?RED:'#39e6ff',w==='e'?RED:'#7fe9ff',false)}</div>
+      <h2 style="color:${w==='e'?'#ff3b5c':'#39e6ff'}">${w==='e'?t('endE'):t('endV')}</h2>
+      <p style="font-size:20px;font-weight:700;color:${isSpec()?'var(--gold)':won?'var(--ok)':'var(--danger)'}">${isSpec()?t('over'):won?t('won'):t('lost')}</p>
+      <div class="endlist">${S.players.map(p=>{const col=rColor(p.role,p.awake);const x=`${esc(p.name)} — <b style="color:${col}">${esc(rLabel(p.role||'drone',p.awake))}</b>`;return `<div>${p.alive?x:`<s>${x}</s>`}</div>`}).join('')}</div>
+      ${S.me.host?`<button class="btn" id="endLobby">${t('endLobby')}</button>`:`<p style="color:var(--muted)">${t('endHostOnly')}</p>`}
+      <button class="btn sec" id="endClose">${t('seeBoard')}</button></div></div>`;
+    const el=$('#endLobby');if(el)el.onclick=()=>socket.emit('lobby');
+    $('#endClose').onclick=()=>{ui.endClosed=true;renderOverlay();renderCenter()};
+    return;
+  }
+  o.innerHTML='';
+}
+
+/* =========================================================
+   NARRATEUR (synthèse vocale du navigateur)
+   ========================================================= */
+let NARR=LS.get('dr_narr',true);
+function narrate(text,quiet){
+  if(!NARR||!('speechSynthesis' in window))return;
+  const clean=String(text).replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu,'').trim();
+  if(!clean)return;
+  const u=new SpeechSynthesisUtterance(clean);
+  u.lang=LANG==='fr'?'fr-FR':'en-US';u.rate=1.05;u.volume=quiet?.7:1;
+  const v=speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith(LANG));if(v)u.voice=v;
+  speechSynthesis.speak(u);
+}
+
+/* barre vocale */
+function renderVoiceBar(){
+  const b=$('#voicebar');
+  const enabled=S&&S.settings.voice;
+  let st='';
+  if(V.on&&S&&isSpec()){
+    st=S.voice.from.length?t('vsSpecOn'):t('vsSpecOff');
+  }else if(V.on&&S){
+    const c=channel();
+    const all=S.players.concat(S.spectators||[]);
+    const n=all.filter(p=>S.voice.to.includes(p.id)&&p.voice&&p.connected).length;
+    if(!V.track)st=t('vsNoMic');
+    else if(V.muted)st=t('vsMuted');
+    else if(!S.voice.to.length)st=(isNight()&&S.me.alive)?t('vsNight'):t('vsNobody');
+    else if(!n)st=t('vsAlone');
+    else st=n===1?t('vsHeard1',{c:c.label}):t('vsHeardN',{n,c:c.label});
+  }
+  const spec=isSpec();
+  const micBtn=spec?'':`<button class="vbtn ${V.muted?'off':(S&&S.voice.to.length&&V.track?'on':'')}" id="muteBtn">${V.muted?t('vMuted'):(!V.track?t('vNoMic'):(S&&S.voice.to.length?t('vActive'):t('vNight')))}</button>`;
+  b.innerHTML=`${enabled?(V.on?`${micBtn}<button class="vbtn" id="vLeave">${t('vLeave')}</button>`:`<button class="vbtn on" id="vJoin">${spec?t('vListen'):t('vJoin')}</button>`):`<span class="vstat" style="flex-basis:auto">${t('vOff')}</span>`}
+    <button class="vbtn ${NARR?'on':''}" id="narrBtn">${NARR?'🔊':'🔈'} ${t('narr')}</button>
+    ${st?`<div class="vstat">${esc(st)}</div>`:''}`;
+  const j=$('#vJoin');if(j)j.onclick=joinVoice;
+  const m=$('#muteBtn');if(m)m.onclick=()=>{V.muted=!V.muted;Object.keys(V.pcs).forEach(applyTrack);renderVoiceBar()};
+  const l=$('#vLeave');if(l)l.onclick=()=>leaveVoice(true);
+  $('#narrBtn').onclick=()=>{NARR=!NARR;LS.set('dr_narr',NARR);if(!NARR&&'speechSynthesis' in window)speechSynthesis.cancel();else narrate(t('narrOn'));renderVoiceBar()};
+}
+
+applyStatic();renderVis();renderList();
+
+/* =========================================================
+   VOCAL (WebRTC pair-à-pair, règles décidées par le serveur)
+   ========================================================= */
+const V={on:false,stream:null,track:null,muted:false,pcs:{},ctx:null,an:{},talking:new Set()};
+const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}]};
+
+async function joinVoice(){
+  if(V.on)return;
+  V.on=true;
+  try{V.ctx=V.ctx||new (window.AudioContext||window.webkitAudioContext)();V.ctx.resume();}catch(e){}
+  if(isSpec()){socket.emit('voice',true);renderVoiceBar();voiceSync();return}
+  try{
+    V.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    V.track=V.stream.getAudioTracks()[0];
+    addAnalyser(ME,V.stream);
+  }catch(e){V.track=null;toast(t('micUnavailable'));}
+  socket.emit('voice',true);
+  renderVoiceBar();voiceSync();
+}
+function leaveVoice(notify){
+  V.on=false;
+  Object.keys(V.pcs).forEach(closePC);
+  if(V.stream)V.stream.getTracks().forEach(t=>t.stop());
+  V.stream=null;V.track=null;
+  Object.keys(V.an).forEach(k=>delete V.an[k]);V.talking.clear();
+  if(notify)socket.emit('voice',false);
+  if(S)renderVoiceBar();
+}
+function voiceSync(){
+  if(!S)return;
+  if(!S.settings.voice&&V.on){leaveVoice(false);return}
+  if(!V.on)return;
+  const specIds=new Set((S.spectators||[]).map(x=>x.id));
+  const peers=S.players.concat(S.spectators||[]).filter(p=>p.id!==ME&&p.voice&&p.connected&&!(isSpec()&&specIds.has(p.id)));
+  const ids=new Set(peers.map(p=>p.id));
+  Object.keys(V.pcs).forEach(id=>{if(!ids.has(id))closePC(id)});
+  peers.forEach(p=>{if(!V.pcs[p.id]&&ME<p.id)createPC(p.id,true)});
+  Object.keys(V.pcs).forEach(applyTrack);
+}
+function applyTrack(id){
+  const o=V.pcs[id];if(!o||!S)return;
+  const want=(V.track&&!V.muted&&S.voice.to.includes(id))?V.track:null;
+  if(o.sender&&o.cur!==want){o.cur=want;o.sender.replaceTrack(want).catch(()=>{});}
+  if(o.audio)o.audio.muted=!S.voice.from.includes(id);
+}
+function createPC(id,initiator){
+  const pc=new RTCPeerConnection(ICE);
+  const o={pc,sender:null,cur:undefined,audio:null,queue:[]};
+  V.pcs[id]=o;
+  pc.onicecandidate=e=>{if(e.candidate)socket.emit('rtc',{to:id,data:{c:e.candidate}})};
+  pc.ontrack=e=>{
+    const stream=e.streams[0]||new MediaStream([e.track]);
+    if(!o.audio){o.audio=document.createElement('audio');o.audio.autoplay=true;o.audio.playsInline=true;$('#audiobox').appendChild(o.audio);}
+    o.audio.srcObject=stream;o.audio.play().catch(()=>{});
+    addAnalyser(id,stream);applyTrack(id);
+  };
+  pc.onconnectionstatechange=()=>{if(['failed','closed'].includes(pc.connectionState)&&V.pcs[id]===o){closePC(id);setTimeout(voiceSync,1500)}};
+  if(initiator){
+    const tr=pc.addTransceiver('audio',{direction:'sendrecv'});
+    o.sender=tr.sender;applyTrack(id);
+    pc.createOffer().then(of=>pc.setLocalDescription(of)).then(()=>socket.emit('rtc',{to:id,data:{sdp:pc.localDescription}})).catch(()=>{});
+  }
+  return o;
+}
+function closePC(id){
+  const o=V.pcs[id];if(!o)return;
+  delete V.pcs[id];
+  try{o.pc.close()}catch(e){}
+  if(o.audio){o.audio.srcObject=null;o.audio.remove()}
+  delete V.an[id];V.talking.delete(id);
+}
+socket.on('rtc',async({from,data})=>{
+  if(!V.on||!data)return;
+  try{
+    if(data.sdp&&data.sdp.type==='offer'){
+      if(V.pcs[from])closePC(from);
+      const o=createPC(from,false);
+      await o.pc.setRemoteDescription(data.sdp);
+      const tr=o.pc.getTransceivers()[0];
+      if(tr){tr.direction='sendrecv';o.sender=tr.sender;applyTrack(from);}
+      const ans=await o.pc.createAnswer();await o.pc.setLocalDescription(ans);
+      socket.emit('rtc',{to:from,data:{sdp:o.pc.localDescription}});
+      for(const c of o.queue)await o.pc.addIceCandidate(c).catch(()=>{});o.queue=[];
+    }else if(data.sdp&&data.sdp.type==='answer'){
+      const o=V.pcs[from];if(!o)return;
+      await o.pc.setRemoteDescription(data.sdp);
+      for(const c of o.queue)await o.pc.addIceCandidate(c).catch(()=>{});o.queue=[];
+    }else if(data.c){
+      const o=V.pcs[from];if(!o)return;
+      if(o.pc.remoteDescription)await o.pc.addIceCandidate(data.c).catch(()=>{});else o.queue.push(data.c);
+    }
+  }catch(e){console.warn('rtc',e)}
+});
+function addAnalyser(id,stream){
+  if(!V.ctx)return;
+  try{const src=V.ctx.createMediaStreamSource(stream);const an=V.ctx.createAnalyser();an.fftSize=1024;src.connect(an);V.an[id]={an,buf:new Float32Array(an.fftSize)};}catch(e){}
+}
+/* détection de la parole : micro local via WebAudio, joueurs distants via le niveau audio WebRTC */
+V.loud={};
+function levelOf(id){
+  if(id!==ME){
+    const o=V.pcs[id];
+    if(o){
+      try{
+        const r=o.pc.getReceivers().find(r=>r.track&&r.track.kind==='audio');
+        if(r&&r.getSynchronizationSources){
+          const src=r.getSynchronizationSources();
+          if(src.length)return Math.max(...src.map(x=>(Date.now()-x.timestamp<500?x.audioLevel||0:0)))*1.4;
+        }
+      }catch(e){}
+    }
+  }
+  const a=V.an[id];if(!a)return 0;
+  a.an.getFloatTimeDomainData(a.buf);
+  let sum=0;for(let k=0;k<a.buf.length;k++)sum+=a.buf[k]*a.buf[k];
+  return Math.sqrt(sum/a.buf.length);
+}
+document.addEventListener('click',()=>{if(V.ctx&&V.ctx.state==='suspended')V.ctx.resume().catch(()=>{})});
+setInterval(()=>{
+  if(!V.on||!S)return;
+  const now=Date.now();
+  const ids=[ME,...Object.keys(V.pcs)];
+  let changed=false;
+  for(const id of ids){
+    let loud=levelOf(id)>0.015;
+    if(id===ME)loud=loud&&!!V.track&&!V.muted&&(S.voice.to.length>0||S.phase==='lobby'||S.phase==='end');
+    else{const o=V.pcs[id];if(!o||(o.audio&&o.audio.muted))loud=false}
+    if(loud)V.loud[id]=now;
+    const talking=now-(V.loud[id]||0)<400;
+    if(talking!==V.talking.has(id)){changed=true;talking?V.talking.add(id):V.talking.delete(id);}
+  }
+  for(const id of [...V.talking])if(!ids.includes(id)){V.talking.delete(id);changed=true}
+  if(changed)document.querySelectorAll('.seat').forEach(s=>s.classList.toggle('talking',V.talking.has(s.dataset.id)));
+},100);
+</script>
+</body>
+</html>
