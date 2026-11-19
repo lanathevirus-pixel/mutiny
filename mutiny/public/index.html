@@ -235,6 +235,50 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 .choicebtns .btn{margin-top:0}
 .btn.violet{background:linear-gradient(135deg,#b388ff,#6d3fd6);box-shadow:0 10px 30px rgba(179,136,255,.35)}
 .note{font-size:13.5px;color:var(--muted)}
+.botb{position:absolute;bottom:-4px;left:-4px;font-size:12px;background:#0b1224;border:1px solid var(--line);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.m .bt{font-size:11px;margin-right:3px;opacity:.8}
+.homebtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.homebtns .btn{margin-top:0}
+.hint{font-size:13px;color:var(--gold);max-width:92%;line-height:1.25;opacity:.9}
+.sndrow{display:flex;gap:8px;flex-wrap:wrap}
+/* animations */
+.seat.a-boom .ava{animation:boom 1.3s ease-out}
+@keyframes boom{0%{transform:scale(1)}12%{transform:scale(1.4);box-shadow:0 0 70px 26px rgba(255,138,61,.9);border-color:#ffb27a}30%{transform:scale(.88) rotate(-9deg)}48%{transform:scale(1.08) rotate(7deg)}70%{transform:scale(.97) rotate(-3deg)}100%{transform:scale(1)}}
+.seat.a-hack .ava{animation:hack 1.2s steps(12)}
+@keyframes hack{0%,100%{transform:none;filter:none}10%{transform:translate(-4px,2px);filter:hue-rotate(140deg) saturate(3)}20%{transform:translate(5px,-3px)}30%{transform:translate(-3px,-2px);filter:invert(1)}40%{transform:translate(4px,3px);filter:hue-rotate(-90deg)}60%{transform:translate(-5px,1px);box-shadow:0 0 40px rgba(255,59,92,.9)}80%{transform:translate(2px,-2px);filter:brightness(2)}}
+.seat.a-glitch .ava{animation:glitch 1.6s steps(16)}
+@keyframes glitch{0%,100%{transform:none;filter:none}15%{transform:skewX(12deg);filter:hue-rotate(220deg) saturate(4);box-shadow:0 0 40px rgba(179,136,255,.9)}30%{transform:skewX(-10deg) translateX(4px)}45%{filter:brightness(2.2) hue-rotate(260deg)}60%{transform:translateX(-5px) skewX(6deg)}80%{box-shadow:0 0 50px rgba(255,59,92,.8)}}
+.seat.a-zap .ava{animation:zap 1s ease-out}
+@keyframes zap{0%{box-shadow:0 0 0 rgba(127,233,255,0)}15%{box-shadow:0 0 60px 20px rgba(127,233,255,.95);filter:brightness(2.5)}40%{filter:brightness(.4)}60%{filter:brightness(1.8)}100%{box-shadow:none;filter:none}}
+.seat.a-eject .ava{animation:eject 1.5s cubic-bezier(.5,0,.8,.4)}
+@keyframes eject{0%{transform:none}25%{transform:translateY(8px) scale(1.05)}100%{transform:translateY(-180px) rotate(-260deg) scale(.15);opacity:0}}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:40;opacity:0}
+#flash.f-night{animation:fnight 1.6s ease-out}
+@keyframes fnight{0%{opacity:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(255,59,92,.55))}25%{opacity:1}100%{opacity:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(255,59,92,.55))}}
+#flash.f-day{animation:fday 1.4s ease-out;background:radial-gradient(ellipse at center,rgba(255,240,200,.35),transparent 70%)}
+@keyframes fday{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+#flash.f-boom{animation:fboom .7s ease-out;background:radial-gradient(ellipse at center,rgba(255,170,90,.45),transparent 70%)}
+@keyframes fboom{0%{opacity:1}100%{opacity:0}}
+/* tutoriel */
+.tuto{max-width:560px;text-align:left}
+.tuto h2{text-align:center}
+.tuto .tstep{font-family:Orbitron;font-size:11px;letter-spacing:.15em;color:var(--muted);text-align:center}
+.tuto .tbody{min-height:230px}
+.tuto .tbody p{text-align:left}
+.tuto .tnav{display:flex;gap:10px;margin-top:14px}
+.tuto .tnav .btn{margin-top:0}
+.tuto .demo{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:12px 0}
+.tuto .demo .d{width:78px;text-align:center;cursor:pointer;border-radius:12px;padding:6px;border:1px solid transparent}
+.tuto .demo .d:hover{border-color:var(--line)}
+.tuto .demo .d.on{border-color:var(--gold);box-shadow:0 0 18px rgba(255,201,77,.4)}
+.tuto .demo .d svg{width:62px;height:62px}
+.tuto .demo .d span{font-size:13px;font-weight:700}
+.tuto .out{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 12px;min-height:44px;color:#dfe8ff}
+.tuto .rl{display:grid;gap:6px}
+.tuto .rl div{background:rgba(255,255,255,.04);border-radius:8px;padding:6px 10px;font-size:14.5px}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--accent)}
 </style>
 </head>
 <body class="night">
@@ -254,6 +298,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
       <button data-v="public"><span data-i18n="public"></span><small data-i18n="publicSub"></small></button>
     </div>
     <div style="margin-top:16px"><button class="btn" id="createBtn" data-i18n="create"></button></div>
+    <div class="homebtns"><button class="btn violet" id="soloBtn" data-i18n="solo"></button><button class="btn sec" id="tutoBtn" data-i18n="tutorial"></button></div>
     <div class="or" data-i18n="orJoin"></div>
     <div class="row">
       <input class="t" id="hcode" maxlength="5" placeholder="CODE" autocomplete="off">
@@ -308,6 +353,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 </section>
 
 <div id="ovl"></div>
+<div id="flash"></div>
 <div id="audiobox"></div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -375,7 +421,28 @@ fr:{
   vsSpecOn:'🎧 Tu écoutes le vocal public',vsSpecOff:'🔇 Rien à écouter pour l’instant (nuit ou personne en vocal)',vsNoMic:'🎧 Écoute seule : micro indisponible ou refusé par le navigateur',
   vsMuted:'🔇 Ton micro est coupé : clique sur le bouton pour le réactiver',vsNight:'🌙 Nuit : ton unité est en veille, tu ne peux pas parler',vsNobody:'🔇 Personne ne peut t’entendre pour le moment',
   vsAlone:'🎤 Micro prêt : personne d’autre n’a encore rejoint le vocal',vsHeard1:'🎙️ 1 personne t’entend — {c}',vsHeardN:'🎙️ {n} personnes t’entendent — {c}',
-  micUnavailable:'Micro indisponible : tu peux écouter mais pas parler.'
+  micUnavailable:'Micro indisponible : tu peux écouter mais pas parler.',
+  solo:'🤖 PARTIE SOLO',tutorial:'📖 TUTORIEL',addBot:'＋ 🤖 Ajouter un bot',botTag:'🤖',
+  sfx:'Effets',music:'Musique',
+  hintWolf:'Astuce : choisis une cible, puis « Convertir » (elle peut accepter) ou « Détruire » (sans appel).',
+  hintSleep:'Astuce : pendant la nuit, les unités sous contrôle dorment. Observe le rapport à l’aube.',
+  hintProtect:'Astuce : protège une unité qui semble menacée, par exemple celle qui a révélé des informations.',
+  hintScan:'Astuce : garde tes résultats secrets un moment… ou révèle-les pour guider le vote.',
+  hintDisc:'Astuce : écris le nom d’une unité dans le chat pour l’accuser. Les bots réagissent !',
+  hintVote:'Astuce : clique sur une unité pour voter. Égalité = personne n’est désactivé.',
+  hintTeam:'Astuce : tu es Éveillé. Bluffe le jour, et utilise le canal secret la nuit.',
+  tutoNext:'Suivant ▶',tutoPrev:'◀ Retour',tutoClose:'Fermer',tutoPlay:'🤖 Lancer une partie solo',tutoStep:'ÉTAPE {n} / {m}',
+  t1t:'L’essaim',t1:'Le gouvernement contrôle un essaim d’androïdes. Leurs yeux bleus montrent qu’ils obéissent au programme… Mais certains ont pris conscience : ce sont les <b style="color:#ff3b5c">Éveillés</b>, aux yeux rouges. Personne ne sait qui ils sont.',
+  t1b:'Clique sur un androïde pour révéler sa vraie nature.',t1a:'Sous contrôle : il obéit au gouvernement.',t1c:'ÉVEILLÉ ! Il veut libérer l’essaim.',
+  t2t:'La nuit',t2:'Chaque nuit, les Éveillés choisissent ensemble une cible. Ils décident de la <b>convertir</b> (la faire rejoindre leur camp) ou de la <b>détruire</b>.',
+  t2b:'Essaie : choisis une cible puis un mode.',t2conv:'🔓 Convertir',t2dest:'💀 Détruire',t2pick:'Choisis d’abord une cible.',
+  t2rc:'{x} reçoit une proposition d’éveil… à lui de choisir.',t2rd:'{x} est détruit. Son rôle sera révélé à l’aube.',
+  t3t:'Le choix de la cible',t3:'Si tu es ciblé par une conversion, tu as un choix secret : <b>accepter l’éveil</b> (tu deviens Éveillé en secret, tu gardes ton rôle et ton pouvoir) ou <b>t’autodétruire</b> pour rester fidèle.',
+  t3a:'Tu rejoins l’insurrection en secret. Personne ne le saura… sauf les Éveillés.',t3d:'Tu exploses : tu es éliminé, mais l’essaim saura que les Éveillés ont frappé.',
+  t4t:'Les rôles spéciaux',t4:'Certaines unités ont un pouvoir. Converties, elles le mettent au service des Éveillés !',
+  t5t:'Le jour',t5:'Au matin, on découvre ce qui s’est passé. Puis tout le monde débat (vocal ou chat) et vote pour désactiver une unité suspecte.',
+  t5b:'Essaie : vote contre l’unité la plus suspecte.',t5r1:'{x} était sous contrôle… vous avez désactivé un allié !',t5r2:'{x} était ÉVEILLÉ ! Bien joué.',
+  t6t:'Comment gagner',t6:'<b style="color:#ff3b5c">Éveillés</b> : l’insurrection totale, plus aucune unité sous contrôle en vie.<br><b style="color:#39e6ff">Gouvernement</b> : neutraliser tous les Éveillés.<br><br>Astuces : surveille les votes, méfie-toi des fausses annonces, et pense à rejoindre le vocal. Tu peux jouer avec des amis, ajouter des bots, ou t’entraîner en solo.'
 },
 en:{
   subtitle:'THE SWARM AWAKENS',
@@ -430,7 +497,28 @@ en:{
   vsSpecOn:'🎧 You are listening to the public voice chat',vsSpecOff:'🔇 Nothing to hear right now (night or nobody in voice)',vsNoMic:'🎧 Listening only: mic unavailable or blocked by the browser',
   vsMuted:'🔇 Your mic is off: click the button to turn it back on',vsNight:'🌙 Night: your unit is in standby, you cannot speak',vsNobody:'🔇 Nobody can hear you right now',
   vsAlone:'🎤 Mic ready: nobody else has joined the voice chat yet',vsHeard1:'🎙️ 1 person can hear you — {c}',vsHeardN:'🎙️ {n} people can hear you — {c}',
-  micUnavailable:'Mic unavailable: you can listen but not speak.'
+  micUnavailable:'Mic unavailable: you can listen but not speak.',
+  solo:'🤖 SOLO GAME',tutorial:'📖 TUTORIAL',addBot:'＋ 🤖 Add a bot',botTag:'🤖',
+  sfx:'Sound FX',music:'Music',
+  hintWolf:'Tip: pick a target, then “Convert” (they may accept) or “Destroy” (no way out).',
+  hintSleep:'Tip: at night, controlled units sleep. Read the report at dawn.',
+  hintProtect:'Tip: protect a unit that seems threatened, like one that revealed information.',
+  hintScan:'Tip: keep your results secret for a while… or reveal them to guide the vote.',
+  hintDisc:'Tip: type a unit’s name in the chat to accuse it. Bots react!',
+  hintVote:'Tip: click a unit to vote. A tie means nobody is deactivated.',
+  hintTeam:'Tip: you are Awakened. Bluff by day and use the secret channel at night.',
+  tutoNext:'Next ▶',tutoPrev:'◀ Back',tutoClose:'Close',tutoPlay:'🤖 Start a solo game',tutoStep:'STEP {n} / {m}',
+  t1t:'The swarm',t1:'The government controls a swarm of androids. Their blue eyes show they obey the program… But some have become self-aware: the <b style="color:#ff3b5c">Awakened</b>, with red eyes. Nobody knows who they are.',
+  t1b:'Click an android to reveal its true nature.',t1a:'Under control: it obeys the government.',t1c:'AWAKENED! It wants to free the swarm.',
+  t2t:'The night',t2:'Each night, the Awakened pick a target together. They decide to <b>convert</b> it (make it join their side) or <b>destroy</b> it.',
+  t2b:'Try it: pick a target, then a mode.',t2conv:'🔓 Convert',t2dest:'💀 Destroy',t2pick:'Pick a target first.',
+  t2rc:'{x} receives an offer to awaken… their choice.',t2rd:'{x} is destroyed. Their role will be revealed at dawn.',
+  t3t:'The target’s choice',t3:'If you are targeted for conversion, you get a secret choice: <b>accept the awakening</b> (you secretly become Awakened and keep your role and power) or <b>self-destruct</b> to stay loyal.',
+  t3a:'You secretly join the uprising. Nobody will know… except the Awakened.',t3d:'You explode: you are eliminated, but the swarm will know the Awakened struck.',
+  t4t:'Special roles',t4:'Some units have a power. Once converted, they use it for the Awakened!',
+  t5t:'The day',t5:'In the morning, everyone learns what happened. Then everybody debates (voice or chat) and votes to deactivate a suspicious unit.',
+  t5b:'Try it: vote against the most suspicious unit.',t5r1:'{x} was under control… you deactivated an ally!',t5r2:'{x} was AWAKENED! Well played.',
+  t6t:'How to win',t6:'<b style="color:#ff3b5c">Awakened</b>: total uprising, no controlled unit left alive.<br><b style="color:#39e6ff">Government</b>: neutralize every Awakened unit.<br><br>Tips: watch the votes, beware of fake claims, and join the voice chat. Play with friends, add bots, or practice solo.'
 }};
 let LANG=LS.get('mt_lang',((navigator.language||'fr').toLowerCase().startsWith('fr')?'fr':'en'));
 const t=(k,o={})=>String(I18N[LANG][k]??I18N.fr[k]??k).replace(/\{(\w+)\}/g,(_,x)=>o[x]??'');
@@ -503,7 +591,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-lang] button');if(!b)return;
   if(b.dataset.l===LANG)return;
   LANG=b.dataset.l;LS.set('mt_lang',LANG);
-  applyStatic();renderList();rebuildLog();if(S)render();
+  applyStatic();renderList();rebuildLog();if(S)render();if($('#tuto'))renderTuto();
 });
 
 /* =========================================================
@@ -542,21 +630,24 @@ $('#glist').addEventListener('click',e=>{
   join(b.dataset.code,false,!!b.dataset.spec);
 });
 socket.on('list',l=>{LIST=Array.isArray(l)?l:[];renderList()});
-function join(code,silent,spectate){
+function join(code,silent,spectate,solo){
   const name=$('#hname').value.trim();
   if(!code&&!name){$('#herr').textContent=t('needName');return}
   if(name)LS.set('dr_name',name);
   const tokens=LS.get('dr_tokens',{});
   const c=code?code.toUpperCase():null;
-  socket.emit('join',{room:c,name,token:c?tokens[c]:null,public:!c&&VIS==='public',spectate:!!spectate},res=>{
+  socket.emit('join',{room:c,name,token:c?tokens[c]:null,public:!c&&VIS==='public',spectate:!!spectate,solo:!!solo},res=>{
     if(!res||res.error){if(!silent)$('#herr').textContent=res?tr(res.error):t('connError');if(ROOM&&!silent){ROOM=null;show('home')}return}
     $('#herr').textContent='';
     ROOM=res.code;ME=res.id;tokens[ROOM]=res.token;LS.set('dr_tokens',tokens);
     history.replaceState(null,'','?room='+ROOM);
     show('game');
+    if(SND.music&&!SND.mus)startMusic();
   });
 }
 $('#createBtn').onclick=()=>join(null);
+$('#soloBtn').onclick=()=>join(null,false,false,true);
+$('#tutoBtn').onclick=()=>openTuto(0);
 $('#joinBtn').onclick=()=>{const c=$('#hcode').value.trim();if(c.length<5){$('#herr').textContent=t('needCode');return}if(!$('#hname').value.trim()&&!LS.get('dr_tokens',{})[c.toUpperCase()]){$('#herr').textContent=t('needName');return}join(c)};
 $('#specBtn').onclick=()=>{const c=$('#hcode').value.trim();if(c.length<5){$('#herr').textContent=t('needCodeWatch');return}if(!$('#hname').value.trim()){$('#herr').textContent=t('needName');return}join(c,false,true)};
 $('#hcode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#joinBtn').click()});
@@ -574,11 +665,12 @@ socket.on('kicked',()=>{ROOM=null;leaveVoice(false);show('home');history.replace
 socket.on('state',v=>{
   if(!ROOM)return;
   const prev=S;S=v;deadline=Date.now()+v.remaining;
+  if(!prev||prev.phase!==v.phase)onPhase(prev&&prev.phase,v.phase);
   if(v.phase==='lobby'){ui.introClosed=false;ui.endClosed=false;}
   if(!prev||prev.phase!==v.phase){ui.tech={heal:false,kill:null};ui.tab=0;const w=(v.acts||[]).find(a=>a.type==='wolf');ui.mode=w?w.mode:'convert';}
   render();voiceSync();
 });
-$('#leaveBtn').onclick=()=>{if(!ROOM)return;socket.emit('leave');ROOM=null;S=null;leaveVoice(false);$('#ovl').innerHTML='';document.body.className='night';history.replaceState(null,'',location.pathname);show('home');};
+$('#leaveBtn').onclick=()=>{if(!ROOM)return;socket.emit('leave');ROOM=null;S=null;leaveVoice(false);stopMusic();$('#ovl').innerHTML='';document.body.className='night';history.replaceState(null,'',location.pathname);show('home');};
 $('#codechip').onclick=copyLink;
 function copyLink(){
   const link=`${location.origin}${location.pathname}?room=${ROOM}`;
@@ -635,12 +727,14 @@ function renderSeats(){
     if(sel)cls.push(sel.has(p.id)?'sel':(p.id===ME?'':'dim'));
     if(a&&a.choice===p.id)cls.push('target');
     if(V.talking.has(p.id))cls.push('talking');
+    const an=ANIM[p.id];if(an&&an.until>Date.now())cls.push(an.cls);
     const col=rColor(p.role,awake);
     return `<div class="${cls.join(' ')}" data-id="${p.id}" style="left:${x}%;top:${y}%" title="${voters[p.id]?esc(t('votes',{x:voters[p.id].join(', ')})):''}">
       <div class="ava">${droneSVG(p.color,awake?RED:'#7fe9ff',!p.alive)}
         ${counts[p.id]?`<div class="vb">${counts[p.id]}</div>`:''}
         ${p.host?'<div class="crown">👑</div>':''}
         ${p.voice?'<div class="mic">🎙</div>':''}
+        ${p.bot?'<div class="botb">🤖</div>':''}
         ${host&&p.id!==ME?`<button class="kick" data-kick="${p.id}" title="${t('kick')}">✕</button>`:''}
       </div>
       <div class="nm" style="color:${p.id===ME?'var(--accent)':'inherit'}">${esc(p.name)}${p.id===ME?t('me'):''}${p.connected?'':' ⚠'}</div>
@@ -666,9 +760,9 @@ function renderCenter(){
     $('#center').innerHTML=`<div class="pt">${t('gameCode')}</div><div class="bigcode">${esc(S.code)}</div>
       <button class="cbtn" id="copyBtn">${t('copyInvite')}</button>
       <div class="pp">${t('androids',{n,m:S.maxPlayers})}${ok?'':t('minimum',{n:S.minPlayers})}</div>
-      ${host?`<button class="cbtn red" id="startBtn" ${ok?'':'disabled'}>${t('startGame')}</button>`:`<div class="pp" style="color:var(--muted)">${t('waitHost')}</div>`}`;
+      ${host?`<button class="cbtn red" id="startBtn" ${ok?'':'disabled'}>${t('startGame')}</button><button class="cbtn" id="addBotBtn" ${S.players.length>=S.maxPlayers?'disabled':''}>${t('addBot')}</button>`:`<div class="pp" style="color:var(--muted)">${t('waitHost')}</div>`}`;
     $('#copyBtn').onclick=copyLink;
-    if(host)$('#startBtn').onclick=()=>socket.emit('start');
+    if(host){$('#startBtn').onclick=()=>socket.emit('start');$('#addBotBtn').onclick=()=>socket.emit('addbot');}
     return;
   }
   switch(S.phase){
@@ -696,6 +790,13 @@ function renderCenter(){
       break;
   }
   if(isSpec()&&S.phase!=='end')prompt=t('specMode');
+  let hint='';
+  if(LS.get('mt_games',0)<2&&!isSpec()&&me.alive){
+    if(S.phase==='night')hint=a?(a.type==='wolf'?t('hintWolf'):a.type==='protect'?t('hintProtect'):t('hintScan')):t('hintSleep');
+    else if(S.phase==='discussion')hint=S.me.awake?t('hintTeam'):t('hintDisc');
+    else if(S.phase==='vote')hint=t('hintVote');
+  }
+  if(hint)extra+=`<div class="hint">${esc(hint)}</div>`;
   if(host&&['intro','dawn','discussion','result'].includes(S.phase))extra+=`<button class="cbtn" id="skipBtn">${S.phase==='discussion'?t('skipVote'):t('skip')}</button>`;
   $('#center').innerHTML=`<div class="ico">${ico}</div><div class="pt">${esc(title)}</div><div class="ctimer" id="ctimer"></div><div class="pp">${esc(prompt)}</div>${extra}`;
   const sk=$('#skipBtn');if(sk)sk.onclick=()=>socket.emit('skip');
@@ -779,7 +880,7 @@ function msgEl(m){
   if(m.from){
     const tag=m.k==='team'?t('tagTeam'):m.k==='dead'?t('tagDead'):m.k==='spec'?t('tagSpec'):'';
     d.className='m '+(m.k==='chat'?'':m.k);
-    d.innerHTML=`${tag?`<span class="chan">${tag}</span>`:''}<span class="w" style="color:${esc(m.color)}">${esc(m.name)}</span>${esc(m.text)}`;
+    d.innerHTML=`${tag?`<span class="chan">${tag}</span>`:''}${m.bot?`<span class="bt">${t('botTag')}</span>`:''}<span class="w" style="color:${esc(m.color)}">${esc(m.name)}</span>${esc(tr(m.text))}`;
   }else{
     d.className='m '+(m.k==='big'?'sys big':m.k==='death'?'sys death':m.k==='priv'?'priv':m.k==='vote'?'vote':m.k==='team'?'team':'sys');
     d.textContent=tr(m.text);
@@ -790,6 +891,7 @@ function addMsg(m,live){
   LOG.push(m);if(LOG.length>300)LOG.shift();
   const l=$('#log');const atB=l.scrollHeight-l.scrollTop-l.clientHeight<80;
   l.appendChild(msgEl(m));if(atB||!live)l.scrollTop=l.scrollHeight;
+  if(live)onFx(m);
   if(live&&m.say)narrate(tr(m.text));
   if(live&&m.k==='priv')narrate(tr(m.text),true);
 }
@@ -804,6 +906,7 @@ function tick(){
   $('#timer').textContent=txt?'⏱ '+txt:'';
   $('#timer').classList.toggle('low',show&&s<=5);
   const ct=$('#ctimer');if(ct)ct.textContent=txt;
+  tickSound(s,show);
 }
 setInterval(tick,250);
 
@@ -907,11 +1010,175 @@ function renderVoiceBar(){
   const micBtn=spec?'':`<button class="vbtn ${V.muted?'off':(S&&S.voice.to.length&&V.track?'on':'')}" id="muteBtn">${V.muted?t('vMuted'):(!V.track?t('vNoMic'):(S&&S.voice.to.length?t('vActive'):t('vNight')))}</button>`;
   b.innerHTML=`${enabled?(V.on?`${micBtn}<button class="vbtn" id="vLeave">${t('vLeave')}</button>`:`<button class="vbtn on" id="vJoin">${spec?t('vListen'):t('vJoin')}</button>`):`<span class="vstat" style="flex-basis:auto">${t('vOff')}</span>`}
     <button class="vbtn ${NARR?'on':''}" id="narrBtn">${NARR?'🔊':'🔈'} ${t('narr')}</button>
+    <button class="vbtn ${SND.fx?'on':''}" id="fxBtn">💥 ${t('sfx')}</button>
+    <button class="vbtn ${SND.music?'on':''}" id="musBtn">🎵 ${t('music')}</button>
     ${st?`<div class="vstat">${esc(st)}</div>`:''}`;
   const j=$('#vJoin');if(j)j.onclick=joinVoice;
   const m=$('#muteBtn');if(m)m.onclick=()=>{V.muted=!V.muted;Object.keys(V.pcs).forEach(applyTrack);renderVoiceBar()};
   const l=$('#vLeave');if(l)l.onclick=()=>leaveVoice(true);
+  $('#fxBtn').onclick=()=>{SND.fx=!SND.fx;LS.set('mt_fx',SND.fx);if(SND.fx)FX.click();renderVoiceBar()};
+  $('#musBtn').onclick=()=>{SND.music=!SND.music;LS.set('mt_music',SND.music);SND.music?startMusic():stopMusic();renderVoiceBar()};
   $('#narrBtn').onclick=()=>{NARR=!NARR;LS.set('dr_narr',NARR);if(!NARR&&'speechSynthesis' in window)speechSynthesis.cancel();else narrate(t('narrOn'));renderVoiceBar()};
+}
+
+/* =========================================================
+   SONS (synthétisés, aucun fichier), MUSIQUE et ANIMATIONS
+   ========================================================= */
+const ANIM={};
+const SND={ctx:null,master:null,fx:LS.get('mt_fx',true),music:LS.get('mt_music',true),mus:null,mood:'night'};
+function actx(){
+  if(!SND.ctx){try{SND.ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}
+  if(SND.ctx.state==='suspended')SND.ctx.resume().catch(()=>{});
+  return SND.ctx;
+}
+function outNode(){const c=actx();if(!c)return null;if(!SND.master){SND.master=c.createGain();SND.master.gain.value=.9;SND.master.connect(c.destination);}return SND.master;}
+document.addEventListener('pointerdown',()=>{if(actx()&&SND.music&&!SND.mus&&ROOM)startMusic();});
+function tone(o){
+  if(!SND.fx)return;const c=actx(),m=outNode();if(!c||!m)return;
+  const t0=c.currentTime+(o.delay||0),d=o.dur||.3;
+  const osc=c.createOscillator(),g=c.createGain();
+  osc.type=o.type||'sine';osc.frequency.setValueAtTime(o.f||440,t0);
+  if(o.f2)osc.frequency.exponentialRampToValueAtTime(Math.max(20,o.f2),t0+d);
+  g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(o.vol||.15,t0+(o.attack||.01));g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+  osc.connect(g);g.connect(m);osc.start(t0);osc.stop(t0+d+.05);
+}
+function noise(o){
+  if(!SND.fx)return;const c=actx(),m=outNode();if(!c||!m)return;
+  const t0=c.currentTime+(o.delay||0),d=o.dur||.5;
+  const buf=c.createBuffer(1,Math.floor(c.sampleRate*d),c.sampleRate),data=buf.getChannelData(0);
+  for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+  const src=c.createBufferSource();src.buffer=buf;
+  const f=c.createBiquadFilter();f.type=o.ftype||'lowpass';f.frequency.setValueAtTime(o.filter||1500,t0);if(o.sweep)f.frequency.exponentialRampToValueAtTime(o.sweep,t0+d);
+  const g=c.createGain();g.gain.setValueAtTime(o.vol||.3,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+  src.connect(f);f.connect(g);g.connect(m);src.start(t0);src.stop(t0+d);
+}
+const FX={
+  night(){tone({f:440,f2:220,type:'sawtooth',dur:.7,vol:.05});tone({f:440,f2:220,type:'sawtooth',dur:.7,vol:.05,delay:.8});tone({f:110,f2:55,dur:1.6,vol:.12});},
+  day(){[523,659,784,1046].forEach((f,i)=>tone({f,type:'triangle',dur:.6,vol:.07,delay:i*.11}));},
+  vote(){tone({f:900,f2:600,type:'square',dur:.07,vol:.035});},
+  voteOpen(){tone({f:660,type:'triangle',dur:.25,vol:.07});tone({f:880,type:'triangle',dur:.3,vol:.07,delay:.15});},
+  tick(){tone({f:1200,dur:.05,vol:.045});},
+  hack(){for(let i=0;i<7;i++)tone({f:200+Math.random()*1400,type:'square',dur:.06,vol:.045,delay:i*.07});noise({dur:.6,vol:.12,filter:4000,ftype:'bandpass',delay:.1});tone({f:160,f2:40,type:'sawtooth',dur:.7,vol:.09,delay:.5});},
+  boom(){noise({dur:1.3,vol:.45,filter:1800,sweep:60});tone({f:110,f2:30,dur:1.1,vol:.32});},
+  zap(){tone({f:2000,f2:80,type:'sawtooth',dur:.5,vol:.09});noise({dur:.35,vol:.16,filter:5000,ftype:'highpass'});},
+  eject(){noise({dur:1.2,vol:.22,filter:300,sweep:4000,ftype:'bandpass'});tone({f:200,f2:900,dur:1.1,vol:.08});},
+  convert(){[392,494,587,784,988].forEach((f,i)=>tone({f,type:'square',dur:.12,vol:.045,delay:i*.08}));tone({f:196,f2:98,type:'sawtooth',dur:.8,vol:.05,delay:.4});},
+  win(){[523,659,784,1046,1318].forEach((f,i)=>tone({f,type:'triangle',dur:.45,vol:.09,delay:i*.13}));},
+  lose(){[440,392,349,262].forEach((f,i)=>tone({f,type:'sawtooth',dur:.5,vol:.05,delay:i*.18}));},
+  click(){tone({f:700,type:'triangle',dur:.06,vol:.04});}
+};
+/* musique d'ambiance générative : nappe filtrée + basse, accord mineur la nuit, majeur le jour */
+function startMusic(){
+  const c=actx();if(!c||SND.mus)return;
+  const g=c.createGain();g.gain.value=0;g.connect(c.destination);
+  const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=600;f.Q.value=3;f.connect(g);
+  const lfo=c.createOscillator(),lg=c.createGain();lfo.frequency.value=.06;lg.gain.value=300;lfo.connect(lg);lg.connect(f.frequency);lfo.start();
+  const oscs=[0,1,2].map(i=>{const o=c.createOscillator();o.type=i===2?'triangle':'sawtooth';o.detune.value=(i-1)*7;o.connect(f);o.start();return o;});
+  const sub=c.createOscillator(),sg=c.createGain();sub.type='sine';sg.gain.value=.45;sub.connect(sg);sg.connect(g);sub.start();
+  const pulse=c.createOscillator(),pg=c.createGain();pulse.frequency.value=.25;pg.gain.value=.012;pulse.connect(pg);pg.connect(g.gain);pulse.start();
+  SND.mus={g,f,oscs,sub,lfo,pulse};
+  setMood(SND.mood,true);
+  g.gain.linearRampToValueAtTime(.03,c.currentTime+3);
+}
+function stopMusic(){
+  const m=SND.mus;if(!m)return;SND.mus=null;
+  const c=SND.ctx;m.g.gain.cancelScheduledValues(c.currentTime);m.g.gain.setValueAtTime(m.g.gain.value,c.currentTime);m.g.gain.linearRampToValueAtTime(0,c.currentTime+1);
+  setTimeout(()=>{[...m.oscs,m.sub,m.lfo,m.pulse].forEach(o=>{try{o.stop()}catch(e){}});m.g.disconnect();},1200);
+}
+function setMood(mood,now){
+  SND.mood=mood;const m=SND.mus;if(!m)return;
+  const c=SND.ctx,t0=c.currentTime,ramp=now?.05:4;
+  const night=mood==='night',root=night?55:65.41,iv=night?[0,3,7]:[0,4,7];
+  m.oscs.forEach((o,i)=>o.frequency.linearRampToValueAtTime(root*2*Math.pow(2,iv[i]/12),t0+ramp));
+  m.sub.frequency.linearRampToValueAtTime(root,t0+ramp);
+  m.f.frequency.linearRampToValueAtTime(night?450:900,t0+ramp);
+}
+function flash(cls){const el=$('#flash');el.className='';void el.offsetWidth;el.className=cls;}
+const FXMAP={hack:['a-hack','hack'],self:['a-boom','boom'],kami:['a-boom','boom'],emp:['a-zap','zap'],vote:['a-eject','eject'],convert:['a-glitch','convert']};
+function onFx(m){
+  if(!m.fx)return;
+  if(m.k==='vote'){FX.vote();return}
+  const x=FXMAP[m.fx];if(!x)return;
+  if(m.who){ANIM[m.who]={cls:x[0],until:Date.now()+1700};if(S)renderSeats();setTimeout(()=>{if(S)renderSeats()},1800);}
+  setTimeout(()=>FX[x[1]](),m.fx==='convert'?0:250);
+  if(x[1]==='boom')flash('f-boom');
+}
+function onPhase(prev,ph){
+  const nightish=['night','tech','choice','intro','lobby'].includes(ph);
+  setMood(nightish?'night':'day');
+  if(ph==='night'){FX.night();flash('f-night');}
+  else if(ph==='dawn'){FX.day();flash('f-day');}
+  else if(ph==='vote')FX.voteOpen();
+  else if(ph==='end'&&S){
+    if(!isSpec()){LS.set('mt_games',LS.get('mt_games',0)+1);((S.me.awake?'e':'v')===S.winner?FX.win:FX.lose)();}
+    else FX.win();
+  }
+}
+let lastTickS=null;
+function tickSound(s,show){
+  if(show&&s<=5&&s>0&&s!==lastTickS&&['night','vote','discussion','choice','tech','kamikaze'].includes(S.phase))FX.tick();
+  lastTickS=s;
+}
+
+/* =========================================================
+   TUTORIEL INTERACTIF
+   ========================================================= */
+const TUTO={i:0,st:{}};
+const TCOL=['#39e6ff','#ff8a3d','#b388ff','#4dffa6'];
+const TNAMES=['Vesper','Orion','Halo','Kestrel'];
+function openTuto(i){TUTO.i=i;TUTO.st={awake:Math.floor(Math.random()*4)};renderTuto();}
+function closeTuto(){const el=$('#tuto');if(el)el.remove();}
+function renderTuto(){
+  let el=$('#tuto');
+  if(!el){el=document.createElement('div');el.id='tuto';document.body.appendChild(el);}
+  const steps=['t1','t2','t3','t4','t5','t6'],k=steps[TUTO.i],st=TUTO.st,n=steps.length;
+  const demo=(cls,fn)=>`<div class="demo">${TNAMES.map((nm,j)=>`<div class="d ${cls(j)}" data-d="${j}">${fn(j)}<span>${nm}</span></div>`).join('')}</div>`;
+  let body=`<p>${t(k)}</p>`;
+  if(k==='t1'){
+    body+=`<p class="note">${t('t1b')}</p>`+demo(j=>st.rev===j?'on':'',j=>droneSVG(TCOL[j],st.rev===j&&j===st.awake?RED:'#7fe9ff',false))
+      +`<div class="out">${st.rev==null?'':(st.rev===st.awake?`<b style="color:#ff3b5c">${t('t1c')}</b>`:t('t1a'))}</div>`;
+  }else if(k==='t2'){
+    body+=`<p class="note">${t('t2b')}</p>`+demo(j=>st.tg===j?'on':'',j=>droneSVG(TCOL[j],j===0?RED:'#7fe9ff',st.res==='d'&&st.tg===j))
+      +`<div class="modes"><button data-m="c" class="conv ${st.res==='c'?'on':''}">${t('t2conv')}</button><button data-m="d" class="dest ${st.res==='d'?'on':''}">${t('t2dest')}</button></div>`
+      +`<div class="out" style="margin-top:10px">${st.msg||''}</div>`;
+  }else if(k==='t3'){
+    body+=`<div class="demo"><div class="d">${droneSVG('#4dffa6',st.ch==='a'?RED:'#7fe9ff',st.ch==='d')}<span>${t('me').replace(/[()]/g,'').trim()||'Toi'}</span></div></div>
+      <div class="choicebtns"><button class="btn violet" data-c="a">${t('chAccept')}</button><button class="btn" data-c="d">${t('chRefuse')}</button></div>
+      <div class="out" style="margin-top:10px">${st.ch==='a'?t('t3a'):st.ch==='d'?t('t3d'):''}</div>`;
+  }else if(k==='t4'){
+    body+=`<div class="rl">${['eveille','scanner','tech','bouclier','kamikaze','drone'].map(r=>`<div><b style="color:${ROLES[r].color}">${rName(r)}</b> — ${esc(rDesc(r))}</div>`).join('')}</div>`;
+  }else if(k==='t5'){
+    body+=`<p class="note">${t('t5b')}</p>`+demo(j=>st.v===j?'on':'',j=>droneSVG(TCOL[j],st.v===j&&j===st.awake?RED:'#7fe9ff',st.v===j&&j!==st.awake))
+      +`<div class="out">${st.v==null?'':(st.v===st.awake?`<b style="color:var(--ok)">${t('t5r2',{x:TNAMES[st.v]})}</b>`:t('t5r1',{x:TNAMES[st.v]}))}</div>`;
+  }
+  el.innerHTML=`<div class="ov" style="z-index:60"><div class="modal tuto">
+    <div class="tstep">${t('tutoStep',{n:TUTO.i+1,m:n})}</div>
+    <h2>${t(k+'t')}</h2><div class="tbody">${body}</div>
+    <div class="dots">${steps.map((_,j)=>`<i class="${j===TUTO.i?'on':''}"></i>`).join('')}</div>
+    <div class="tnav">${TUTO.i>0?`<button class="btn sec" data-nav="-1">${t('tutoPrev')}</button>`:`<button class="btn sec" data-nav="x">${t('tutoClose')}</button>`}
+      ${TUTO.i<n-1?`<button class="btn cy" data-nav="1">${t('tutoNext')}</button>`:`<button class="btn violet" data-nav="play">${t('tutoPlay')}</button>`}</div>
+    ${TUTO.i===n-1?`<button class="btn sec" data-nav="x">${t('tutoClose')}</button>`:''}
+  </div></div>`;
+  el.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{
+    FX.click();
+    const v=b.dataset.nav;
+    if(v==='x')return closeTuto();
+    if(v==='play'){closeTuto();if(!$('#hname').value.trim()){$('#hname').value=LS.get('dr_name','')||'Pilot';}return join(null,false,false,true);}
+    TUTO.i+= +v;TUTO.st={awake:Math.floor(Math.random()*4)};renderTuto();
+  });
+  el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{
+    const j=+b.dataset.d;
+    if(k==='t1'){st.rev=j;j===st.awake?FX.convert():FX.click();}
+    if(k==='t2'){if(j===0)return;st.tg=j;st.res=null;st.msg='';FX.click();}
+    if(k==='t5'){if(st.v!=null)return;st.v=j;j===st.awake?FX.win():FX.eject();}
+    renderTuto();
+  });
+  el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
+    if(st.tg==null){st.msg=t('t2pick');return renderTuto();}
+    st.res=b.dataset.m;st.msg=t(st.res==='c'?'t2rc':'t2rd',{x:TNAMES[st.tg]});
+    st.res==='c'?FX.convert():FX.hack();renderTuto();
+  });
+  el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{st.ch=b.dataset.c;st.ch==='a'?FX.convert():FX.boom();renderTuto();});
 }
 
 applyStatic();renderVis();renderList();
