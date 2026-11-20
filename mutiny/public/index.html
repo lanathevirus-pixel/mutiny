@@ -169,7 +169,24 @@ html.overlay,html.overlay body{background:transparent!important}
 html.overlay body::before,html.overlay body::after{display:none}
 html.overlay .scr-back{display:none}
 /* overlay OBS : tout sur des plaques sombres, lisible sur n'importe quel fond */
-html.overlay .scr{zoom:var(--ovs,1)}
+html.overlay .scr{zoom:var(--ovs,1);position:relative;z-index:1}
+/* éclairage jour / nuit projeté sur le décor du streamer */
+#scrLight{display:none;position:fixed;inset:0;pointer-events:none;z-index:0}
+html.overlay #scrLight{display:block}
+#scrLight i{position:absolute;inset:0;opacity:0;transition:opacity 3s ease}
+#scrLight .ln{background:radial-gradient(ellipse 75% 65% at 50% 38%,rgba(30,50,170,.42),rgba(4,8,45,.84) 68%,rgba(0,2,18,.95));mix-blend-mode:multiply}
+#scrLight .ln::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 120% 90% at 50% 50%,transparent 45%,rgba(0,0,10,.75));}
+#scrLight .ln::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 38% 34% at 74% 8%,rgba(150,185,255,.38),transparent 70%),linear-gradient(200deg,rgba(140,175,255,.16) 0%,transparent 40%);mix-blend-mode:screen;animation:moon 9s ease-in-out infinite alternate}
+#scrLight .ld{background:radial-gradient(ellipse 85% 75% at 50% -12%,rgba(255,224,150,.75),rgba(255,190,100,.32) 50%,rgba(255,200,120,.1) 82%);mix-blend-mode:screen}
+#scrLight .ld::after{content:'';position:absolute;inset:-10% 0 0;background:repeating-linear-gradient(100deg,transparent 0 7%,rgba(255,230,170,.13) 9% 12%,transparent 15% 22%);-webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 75%);mask-image:linear-gradient(180deg,#000 0%,transparent 75%);mix-blend-mode:screen;animation:rays 14s ease-in-out infinite alternate}
+#scrLight .lw{background:linear-gradient(0deg,rgba(255,110,40,.6),rgba(255,160,80,.3) 42%,rgba(120,60,140,.12) 70%,transparent 90%);mix-blend-mode:screen}
+#scrLight .le{background:radial-gradient(ellipse at 50% 50%,rgba(255,40,70,.22),rgba(140,0,25,.72));mix-blend-mode:multiply;animation:alarm 1.6s ease-in-out infinite}
+#scrLight .lv{background:radial-gradient(ellipse at 50% 50%,rgba(80,230,255,.3),rgba(0,70,110,.45));mix-blend-mode:screen}
+@keyframes moon{from{opacity:.75}to{opacity:1}}
+@keyframes rays{from{transform:translateX(-3%)}to{transform:translateX(3%)}}
+@keyframes alarm{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+#scrLight.night .ln,#scrLight.day .ld,#scrLight.dawn .lw,#scrLight.end-e .le,#scrLight.end-v .lv,#scrLight.end-x .le{opacity:var(--lit,1)}
+#scrLight.dawn .ln{opacity:calc(var(--lit,1)*.45)}
 html.overlay .ring,html.overlay .sweep{display:none}
 html.overlay .scrc{inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:min(48%,440px);background:rgba(6,10,24,.86);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:16px 18px;box-shadow:0 10px 40px rgba(0,0,0,.6);gap:6px}
 html.overlay .scr-brand{opacity:.7;color:#cfd8f0}
@@ -472,6 +489,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 </section>
 
 <section id="screen" class="hidden">
+  <div id="scrLight"><i class="ln"></i><i class="ld"></i><i class="lw"></i><i class="le"></i><i class="lv"></i></div>
   <div class="scr">
     <div class="board scrboard">
       <div class="ring"></div><div class="ring r2"></div><div class="sweep"></div>
@@ -939,7 +957,8 @@ try{if(CTRL)sessionStorage.removeItem('mt_screen');else SCR=sessionStorage.getIt
 const OVL=params.get('overlay')==='1',OKEY=params.get('k')||'';
 if(OVL){SCR=(params.get('room')||'').toUpperCase();document.documentElement.classList.add('overlay');}
 if(params.get('chat')==='0')document.documentElement.classList.add('nochat');
-{const z=parseFloat(params.get('scale'));if(z>=.5&&z<=2)document.documentElement.style.setProperty('--ovs',z);}
+{const z=parseFloat(params.get('scale'));if(z>=.5&&z<=2)document.documentElement.style.setProperty('--ovs',z);
+ const l=params.get('light');if(l!==null){const v=Math.max(0,Math.min(2,parseFloat(l)||0));document.documentElement.style.setProperty('--lit',v);}}
 const SLOG=[],SANIM={},STALK=new Set();
 const SX=k=>({
   tip:LANG==='en'?'Streamer mode: play in a separate window, keep only day/night on stream':'Mode streamer : jouer dans une fenêtre séparée, seul jour/nuit reste à l’écran',
@@ -991,6 +1010,8 @@ function renderScreen(){
   const v=SCRV||{phase:'lobby',day:0};
   const nightish=['night','tech','choice','intro','lobby'].includes(v.phase);
   document.body.className=nightish?'night':'day';
+  const lt=v.phase==='lobby'?'':v.phase==='end'?'end-'+(v.winner||'v'):v.phase==='dawn'?'dawn':nightish?'night':'day';
+  $('#scrLight').className=lt;
   let ph,ico=nightish?MOON:SUN;
   if(v.phase==='lobby')ph=SX('wait');
   else if(v.phase==='intro')ph=SX('boot');
