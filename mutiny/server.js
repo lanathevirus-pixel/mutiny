@@ -524,8 +524,8 @@ function doSucc(r, p, t) {
   setCaptain(r, t, false);
   advance(r);
 }
-/* élection du chef d'équipage (jour 2) : son vote compte double et départage les égalités */
-function needElection(r) { return r.settings.captain && r.g && r.day >= 2 && !r.g.capDone && !r.g.captain && alive(r).length > 2; }
+/* élection du chef d’équipage (jour 1) : son vote compte double et départage les égalités */
+function needElection(r) { return r.settings.captain && r.g && r.day >= 1 && !r.g.capDone && !r.g.captain && alive(r).length > 2; }
 function beginElection(r) {
   r.g.capVotes = {};
   msg(r, { k: 'big', text: L('🎖️ Élection du chef d’équipage : votez pour la personne de confiance (son vote comptera double).', '🎖️ Captain election: vote for someone you trust (their vote will count double).'), say: true });

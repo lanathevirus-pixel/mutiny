@@ -139,7 +139,7 @@ Crée un compte gratuit Open Relay / Metered (https://www.metered.ca/tools/openr
 Le log de démarrage indique `[vocal] relais TURN configuré` quand c'est pris en compte.
 
 ## Chef d'équipage
-Au jour 2, les unités élisent un chef d'équipage (option de l'hôte, activée par défaut). Son vote compte double et départage les égalités. S'il tombe, il désigne son successeur (20 s, sinon tirage au sort).
+Au jour 1, les unités élisent un chef d'équipage (option de l'hôte, activée par défaut). Son vote compte double et départage les égalités. S'il tombe, il désigne son successeur (20 s, sinon tirage au sort).
 
 ## Mode streamer
 Bouton 🎥 en haut à droite pendant une partie : il ouvre une **fenêtre de contrôle séparée** contenant tout le jeu (rôle, plateau, chat, vocal). La fenêtre principale devient un écran de diffusion qui n’affiche que les infos publiques : JOUR/NUIT, cycle, minuteur, joueurs (vivants/détruits, chef, votes publics, rôles révélés) : c'est elle qu'on capture dans OBS (capture de fenêtre). Fermer la fenêtre de contrôle (ou cliquer « Rejouer dans cette fenêtre ») ramène le jeu dans la fenêtre principale. Autoriser les pop-ups pour le site si le navigateur les bloque.
