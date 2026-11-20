@@ -164,6 +164,11 @@ html.overlay .scr-back{display:none}
 html.overlay .scrc,html.overlay .seat .nm{text-shadow:0 1px 4px #000,0 0 10px #000}
 html.overlay .scrchat .m{background:rgba(5,9,22,.78)}
 html.overlay .ring,html.overlay .sweep{opacity:.5}
+.vsel{width:100%;background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:600 14px Rajdhani,sans-serif}
+.vmeter{height:10px;background:#0b1224;border:1px solid var(--line);border-radius:6px;margin-top:8px;overflow:hidden}
+#vtBar{height:100%;width:0;background:#556;transition:width .06s}
+.vstate{font-size:.88em;opacity:.8;margin-top:6px}
+#volp .modal{max-height:92vh;overflow:auto}
 .vrow{padding:10px 0;border-bottom:1px solid var(--line)}
 .vlab{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:6px}
 .vsw{font-weight:500;font-size:.9em;opacity:.85;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
@@ -371,7 +376,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
       <button data-v="public"><span data-i18n="public"></span><small data-i18n="publicSub"></small></button>
     </div>
     <div style="margin-top:16px"><button class="btn" id="createBtn" data-i18n="create"></button></div>
-    <div class="homebtns"><button class="btn violet" id="soloBtn" data-i18n="solo"></button><button class="btn sec" id="tutoBtn" data-i18n="tutorial"></button><button class="btn sec" id="profBtn" data-i18n="profile"></button><button class="btn sec" id="volHome" title="Son">🔊</button></div>
+    <div class="homebtns"><button class="btn violet" id="soloBtn" data-i18n="solo"></button><button class="btn sec" id="tutoBtn" data-i18n="tutorial"></button><button class="btn sec" id="profBtn" data-i18n="profile"></button><button class="btn sec" id="volHome" data-i18n="audioSet"></button></div>
     <a class="kofi hidden" id="kofiBtn" target="_blank" rel="noopener"></a>
     <div class="or" data-i18n="orJoin"></div>
     <div class="row">
@@ -462,7 +467,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2400)}
+function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),String(m).length>70?6000:2400)}
 
 /* ---------- traductions ---------- */
 const I18N={
@@ -481,7 +486,7 @@ fr:{
   connError:'Erreur de connexion.',kicked:'Tu as été retiré de la partie par l’hôte.',
   leave:'Quitter',send:'Envoyer',copyLinkTitle:'Copier le lien d’invitation',linkCopied:'Lien d’invitation copié !',copyThis:'Copie ce lien :',
   pubPill:'🌍 PUBLIQUE',privPill:'🔒 PRIVÉE',specPill:'SPECTATEUR',cycle:'Cycle {n}',
-  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_lastwords:'DERNIERS MOTS',ph_end:'FIN',
+  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_lastwords:'DERNIERS MOTS',audioSet:'🎧 Audio',ph_end:'FIN',
   gameCode:'CODE DE LA PARTIE',copyInvite:'📋 Copier le lien d’invitation',androids:'{n} / {m} androïdes',minimum:' — minimum {n}',
   startGame:'▶ Lancer la partie',waitHost:'En attente de l’hôte…',
   introTitle:'Activation de l’essaim',introPrompt:'Découvre ton rôle…',
@@ -569,7 +574,7 @@ en:{
   connError:'Connection error.',kicked:'The host removed you from the game.',
   leave:'Leave',send:'Send',copyLinkTitle:'Copy invite link',linkCopied:'Invite link copied!',copyThis:'Copy this link:',
   pubPill:'🌍 PUBLIC',privPill:'🔒 PRIVATE',specPill:'SPECTATOR',cycle:'Cycle {n}',
-  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_lastwords:'LAST WORDS',ph_end:'END',
+  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_lastwords:'LAST WORDS',audioSet:'🎧 Audio',ph_end:'END',
   gameCode:'GAME CODE',copyInvite:'📋 Copy invite link',androids:'{n} / {m} androids',minimum:' — minimum {n}',
   startGame:'▶ Start the game',waitHost:'Waiting for the host…',
   introTitle:'Swarm boot-up',introPrompt:'Discover your role…',
@@ -1026,7 +1031,40 @@ function setVol(k,v){
   if(k==='music'&&SND.mus&&c){SND.mus.g.gain.cancelScheduledValues(c.currentTime);SND.mus.g.gain.setTargetAtTime(.03*volF('music'),c.currentTime,.1);}
   if(k==='voice')Object.values(V.pcs).forEach(o=>{if(o.audio)o.audio.volume=Math.min(1,volF('voice'))});
 }
-function closeVol(){const el=$('#volp');if(el)el.remove();}
+const MT={stream:null,raf:0,ctx:null,el:null};
+function stopMicTest(){cancelAnimationFrame(MT.raf);if(MT.stream&&MT.stream!==V.stream)MT.stream.getTracks().forEach(t=>t.stop());MT.stream=null;if(MT.el){MT.el.pause();MT.el.srcObject=null;MT.el=null;}if(MT.ctx){try{MT.ctx.close()}catch(e){}MT.ctx=null;}}
+function closeVol(){stopMicTest();const el=$('#volp');if(el)el.remove();}
+async function fillDevices(){
+  let devs=[];try{devs=await navigator.mediaDevices.enumerateDevices();}catch(e){}
+  const EN=LANG==='en',def=EN?'System default':'Par défaut du système';
+  const opt=(list,cur)=>`<option value="">${def}</option>`+list.filter(d=>d.deviceId&&d.deviceId!=='default'&&d.deviceId!=='communications').map((d,i)=>`<option value="${esc(d.deviceId)}" ${d.deviceId===cur?'selected':''}>${esc(d.label||('#'+(i+1)))}</option>`).join('');
+  const mi=$('#vtMic'),ou=$('#vtOut');
+  if(mi)mi.innerHTML=opt(devs.filter(d=>d.kind==='audioinput'),AUD.mic);
+  if(ou)ou.innerHTML=opt(devs.filter(d=>d.kind==='audiooutput'),AUD.out);
+  return devs.some(d=>d.kind==='audioinput'&&d.label);
+}
+async function startMicTest(){
+  const EN=LANG==='en';stopMicTest();
+  const st=$('#vtState');if(st)st.textContent=EN?'Requesting the microphone…':'Demande d’accès au micro…';
+  try{MT.stream=V.on&&V.stream?V.stream:await getMic();}
+  catch(e){micError(e);if($('#vtState'))$('#vtState').textContent='❌ '+(e&&e.name||'');return;}
+  await fillDevices();
+  const tr=MT.stream.getAudioTracks()[0];
+  if($('#vtState'))$('#vtState').textContent='✅ '+(tr&&tr.label||(EN?'Microphone active':'Micro actif'))+(EN?' — speak, the bar should move.':' — parle, la barre doit bouger.');
+  try{
+    MT.ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const an=MT.ctx.createAnalyser();an.fftSize=512;MT.ctx.createMediaStreamSource(MT.stream).connect(an);
+    const buf=new Uint8Array(an.fftSize);
+    const loop=()=>{an.getByteTimeDomainData(buf);let m=0;for(const v of buf)m=Math.max(m,Math.abs(v-128));const b=$('#vtBar');if(!b)return;b.style.width=Math.min(100,m/64*100)+'%';b.style.background=m>8?'var(--accent)':'#556';MT.raf=requestAnimationFrame(loop);};
+    loop();
+  }catch(e){}
+  applyLoop();
+}
+function applyLoop(){
+  const on=$('#vtLoop')&&$('#vtLoop').checked;
+  if(MT.el){MT.el.pause();MT.el.srcObject=null;MT.el=null;}
+  if(on&&MT.stream){MT.el=new Audio();MT.el.srcObject=MT.stream;MT.el.volume=Math.min(1,volF('voice'));applySink(MT.el);MT.el.play().catch(()=>{});}
+}
 function openVol(){
   closeVol();
   const EN=LANG==='en';
@@ -1037,13 +1075,35 @@ function openVol(){
     ['voice','🎙️',EN?'Voice chat (other players)':'Vocal (les autres joueurs)',true,null]];
   const el=document.createElement('div');el.id='volp';
   el.innerHTML=`<div class="ov" style="z-index:60"><div class="modal" style="text-align:left;max-width:460px">
-    <h2 style="margin:0 0 14px">🔊 ${EN?'Sound settings':'Réglages du son'}</h2>
+    <h2 style="margin:0 0 10px">🔊 ${EN?'Audio settings':'Réglages audio'}</h2>
+    <div class="vrow">
+      <div class="vlab">🎙️ ${EN?'Microphone':'Micro'}</div>
+      <select id="vtMic" class="vsel"></select>
+      <div class="vmeter"><div id="vtBar"></div></div>
+      <div id="vtState" class="vstate">${EN?'Click “Test my mic”: your browser will ask for permission.':'Clique sur « Tester mon micro » : le navigateur va demander l’autorisation.'}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <button class="btn sec" id="vtStart">🎙️ ${EN?'Test my mic':'Tester mon micro'}</button>
+        <label class="vsw"><input type="checkbox" id="vtLoop"> ${EN?'Hear myself (use headphones)':'M’entendre (avec un casque)'}</label>
+      </div>
+    </div>
+    <div class="vrow">
+      <div class="vlab">🎧 ${EN?'Output (speakers / headset)':'Sortie (haut-parleurs / casque)'}</div>
+      ${canSink?'<select id="vtOut" class="vsel"></select>':`<div class="vstate">${EN?'Choose the output in your system sound settings (or use Chrome / Edge).':'Choisis la sortie dans les réglages son de ton ordinateur (ou utilise Chrome / Edge).'}</div>`}
+      <button class="btn sec" id="vtBeep" style="margin-top:8px">🔔 ${EN?'Test sound':'Tester le son'}</button>
+    </div>
     ${rows.map(([k,ic,lb,on,tg])=>`<div class="vrow">
       <div class="vlab">${ic} ${lb}${tg?`<label class="vsw"><input type="checkbox" data-tg="${tg}" ${on?'checked':''}> ${EN?'on':'activé'}</label>`:''}</div>
       <div class="vsl"><input type="range" min="0" max="100" step="1" value="${VOL[k]}" data-v="${k}"><span id="vv_${k}">${VOL[k]}%</span></div></div>`).join('')}
-    <p style="opacity:.65;font-size:.9em;margin:10px 0 0">${EN?'Saved in this browser. Your own microphone is set in ⚙️ Audio (voice bar).':'Enregistré dans ce navigateur. Ton micro se règle dans ⚙️ Audio (barre vocale).'}</p>
+    <p style="opacity:.65;font-size:.9em;margin:10px 0 0">${EN?'Saved in this browser and used in every game.':'Enregistré dans ce navigateur et utilisé dans toutes tes parties.'}</p>
     <div style="text-align:center;margin-top:16px"><button class="btn primary" id="volClose">${EN?'Close':'Fermer'}</button></div></div></div>`;
   document.body.appendChild(el);
+  fillDevices();
+  $('#vtStart').onclick=startMicTest;
+  $('#vtLoop').onchange=applyLoop;
+  $('#vtBeep').onclick=testSound;
+  $('#vtMic').onchange=async e=>{if(V.on)await setMic(e.target.value);else{AUD.mic=e.target.value;LS.set('mt_mic',AUD.mic);}if(MT.stream||V.on)startMicTest();};
+  const vo=$('#vtOut');if(vo)vo.onchange=e=>{setOut(e.target.value);if(MT.el)applySink(MT.el);testSound();};
+  if(V.on&&V.stream)startMicTest();
   el.querySelectorAll('[data-v]').forEach(i=>{
     i.oninput=()=>{setVol(i.dataset.v,+i.value);$('#vv_'+i.dataset.v).textContent=i.value+'%';};
     i.onchange=()=>{const k=i.dataset.v;if(k==='fx'&&SND.fx)FX.click();if(k==='narr'&&NARR){speechSynthesis.cancel();narrate(t('narrOn'));}};
@@ -1679,14 +1739,16 @@ document.addEventListener('pointerdown',()=>{if(!V.blocked)return;V.blocked=fals
 async function joinVoice(){
   if(V.on)return;
   V.on=true;
-  await Promise.race([loadIce(),new Promise(r=>setTimeout(r,3000))]);
   try{V.ctx=V.ctx||new (window.AudioContext||window.webkitAudioContext)();V.ctx.resume();}catch(e){}
-  if(isSpec()){socket.emit('voice',true);renderVoiceBar();voiceSync();return}
+  const spec=isSpec();
+  const micP=spec?null:getMic();          // demande du micro tout de suite, pendant le clic
+  await Promise.race([loadIce(),new Promise(r=>setTimeout(r,3000))]);
+  if(spec){socket.emit('voice',true);renderVoiceBar();voiceSync();return}
   try{
-    V.stream=await navigator.mediaDevices.getUserMedia({audio:micConstraints()});
+    V.stream=await micP;
     V.track=V.stream.getAudioTracks()[0];
     addAnalyser(ME,V.stream);
-  }catch(e){V.track=null;toast(t('micUnavailable'));}
+  }catch(e){V.track=null;micError(e);}
   socket.emit('voice',true);
   renderVoiceBar();voiceSync();
 }
@@ -1767,19 +1829,37 @@ socket.on('rtc',async({from,data})=>{
 /* ---------- réglages audio : micro, sortie, test, état des connexions ---------- */
 const AUD={mic:LS.get('mt_mic',''),out:LS.get('mt_out','')};
 const EN=()=>LANG==='en';
-function micConstraints(){const c={echoCancellation:true,noiseSuppression:true,autoGainControl:true};if(AUD.mic)c.deviceId={exact:AUD.mic};return c;}
+/* micro : essaie le micro choisi, sinon celui par défaut (les identifiants d'appareils changent parfois) */
+async function getMic(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Object.assign(new Error('nomedia'),{name:'NoMedia'});
+  try{return await navigator.mediaDevices.getUserMedia({audio:micConstraints()});}
+  catch(e){
+    if(AUD.mic&&e&&e.name!=='NotAllowedError'){AUD.mic='';LS.set('mt_mic','');return await navigator.mediaDevices.getUserMedia({audio:micConstraints()});}
+    throw e;
+  }
+}
+function micError(e){
+  const n=e&&e.name,EN=LANG==='en';
+  const msg=n==='NotAllowedError'||n==='SecurityError'?(EN?'🎙️ Microphone blocked: click the padlock left of the address bar, allow the microphone, then reload the page.':'🎙️ Micro bloqué : clique sur le cadenas à gauche de l’adresse, autorise le micro, puis recharge la page.')
+    :n==='NotFoundError'||n==='OverconstrainedError'?(EN?'🎙️ No microphone found: plug one in or check your system sound settings.':'🎙️ Aucun micro détecté : branche-en un ou vérifie les réglages son de ton ordinateur.')
+    :n==='NotReadableError'||n==='AbortError'?(EN?'🎙️ Microphone busy: close the other apps using it (Discord, Teams…) and try again.':'🎙️ Micro occupé : ferme les autres applis qui l’utilisent (Discord, Teams…) puis réessaie.')
+    :n==='NoMedia'?(EN?'🎙️ This browser cannot use a microphone here (use Chrome, Edge or Firefox over https).':'🎙️ Ce navigateur ne peut pas utiliser de micro ici (utilise Chrome, Edge ou Firefox en https).')
+    :t('micUnavailable');
+  toast(msg);reportErr('micro: '+(n||e),'voice');
+}
+function micConstraints(){const c={echoCancellation:true,noiseSuppression:true,autoGainControl:true};if(AUD.mic)c.deviceId={ideal:AUD.mic};return c;}
 const canSink=typeof HTMLMediaElement!=='undefined'&&'setSinkId' in HTMLMediaElement.prototype;
 function applySink(el){if(canSink&&el&&AUD.out)el.setSinkId(AUD.out).catch(()=>{});}
 async function setMic(id){
   AUD.mic=id;LS.set('mt_mic',id);
   if(!V.on||isSpec())return;
   try{
-    const ns=await navigator.mediaDevices.getUserMedia({audio:micConstraints()});
+    const ns=await getMic();
     if(V.stream)V.stream.getTracks().forEach(t=>t.stop());
     V.stream=ns;V.track=ns.getAudioTracks()[0];addAnalyser(ME,ns);
     Object.values(V.pcs).forEach(o=>{o.cur=undefined});Object.keys(V.pcs).forEach(applyTrack);
     toast(EN()?'Microphone changed':'Micro changé');
-  }catch(e){toast(t('micUnavailable'));}
+  }catch(e){micError(e);}
   renderVoiceBar();
 }
 function setOut(id){AUD.out=id;LS.set('mt_out',id);Object.values(V.pcs).forEach(o=>applySink(o.audio));}
