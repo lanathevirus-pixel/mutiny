@@ -17,7 +17,14 @@ const MAX_PLAYERS = 16;
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (_q, r) => r.send('ok'));
-app.get('/config', (_q, r) => r.json({ kofi: /^https:\/\/(www\.)?ko-fi\.com\/[\w-]+\/?$/.test(process.env.KOFI_URL || '') ? process.env.KOFI_URL : null }));
+app.get('/config', (_q, r) => r.json({
+  kofi: /^https:\/\/(www\.)?ko-fi\.com\/[\w-]+\/?$/.test(process.env.KOFI_URL || '') ? process.env.KOFI_URL : null,
+  /* mentions légales (facultatif) : LEGAL_NAME, LEGAL_SIRET, LEGAL_ADDRESS, LEGAL_CONTACT */
+  legalName: (process.env.LEGAL_NAME || '').slice(0, 120) || null,
+  siret: (process.env.LEGAL_SIRET || '').slice(0, 30) || null,
+  legalAddress: (process.env.LEGAL_ADDRESS || '').slice(0, 200) || null,
+  contact: (process.env.LEGAL_CONTACT || '').slice(0, 120) || null
+}));
 
 /* serveurs TURN pour le vocal (relais quand la connexion directe échoue) */
 let iceCache = null, iceAt = 0;

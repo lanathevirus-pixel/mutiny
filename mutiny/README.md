@@ -159,3 +159,6 @@ Bouton « OBS » dans le jeu : copie une adresse à coller dans une **Source nav
 
 ## Bouton de soutien Ko-fi
 Ajouter la variable `KOFI_URL` sur Render (ex. `https://ko-fi.com/tonpseudo`) : un bouton « ☕ Soutenir MUTINY » apparaît sur l'accueil.
+
+## Mentions légales
+Lien « Mentions légales » en bas de l'accueil. Variables Render facultatives pour les compléter : `LEGAL_NAME` (nom ou raison sociale), `LEGAL_SIRET`, `LEGAL_ADDRESS`, `LEGAL_CONTACT` (e-mail).
