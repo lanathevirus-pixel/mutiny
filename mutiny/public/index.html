@@ -85,6 +85,13 @@ body.day .badge{background:var(--gold);color:#2a1a00}
 .timer{font-family:Orbitron;font-weight:700;font-size:22px;min-width:70px;text-align:right}
 .timer.low{color:var(--danger);animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.4}}
+.hr .iconbtn{white-space:nowrap}
+@media(max-width:1100px){.hr .iconbtn span[data-i18n],#streamLbl{display:none}}
+#setHome{position:fixed;top:14px;right:16px;z-index:30;padding:9px 14px;font-size:15px;background:rgba(12,18,38,.85);backdrop-filter:blur(6px)}
+#setHome.hidden{display:none}
+.stabs{display:flex;gap:6px;margin:0 0 14px;border-bottom:1px solid var(--line)}
+.stabs button{background:none;border:none;border-bottom:3px solid transparent;color:var(--muted,#9aa6c4);padding:8px 14px;font:700 15px Rajdhani,sans-serif;cursor:pointer;letter-spacing:.03em}
+.stabs button.on{color:var(--text);border-bottom-color:var(--accent)}
 .iconbtn{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 10px;font-size:14px;font-weight:700}
 .layout{display:grid;grid-template-columns:1fr minmax(320px,410px);gap:16px;padding:14px;min-height:0}
 .boardwrap{display:flex;align-items:center;justify-content:center;min-height:0}
@@ -386,7 +393,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
       <button data-v="public"><span data-i18n="public"></span><small data-i18n="publicSub"></small></button>
     </div>
     <div style="margin-top:16px"><button class="btn" id="createBtn" data-i18n="create"></button></div>
-    <div class="homebtns"><button class="btn violet" id="soloBtn" data-i18n="solo"></button><button class="btn sec" id="tutoBtn" data-i18n="tutorial"></button><button class="btn sec" id="profBtn" data-i18n="profile"></button><button class="btn sec" id="volHome" data-i18n="audioSet"></button></div>
+    <div class="homebtns"><button class="btn violet" id="soloBtn" data-i18n="solo"></button><button class="btn sec" id="tutoBtn" data-i18n="tutorial"></button></div>
     <div class="or" data-i18n="orJoin"></div>
     <div class="row">
       <input class="t" id="hcode" maxlength="5" placeholder="CODE" autocomplete="off">
@@ -414,10 +421,10 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
     </div>
     <div class="hr">
       <div class="timer" id="timer"></div>
-      <button class="iconbtn" id="volBtn">🔊</button>
-      <button class="iconbtn" id="modBtn">🛡️</button>
-      <button class="iconbtn" id="obsBtn">OBS</button>
-      <button class="iconbtn" id="streamBtn" title="">🎥</button>
+      <button class="iconbtn" id="modBtn">🛡️ <span data-i18n="bMod"></span></button>
+      <button class="iconbtn" id="obsBtn">🎬 <span data-i18n="bObs"></span></button>
+      <button class="iconbtn" id="streamBtn" title="">🎥 <span id="streamLbl"></span></button>
+      <button class="iconbtn" id="volBtn">⚙️ <span data-i18n="bSet"></span></button>
       <div class="lang" data-lang></div>
       <button class="iconbtn" id="leaveBtn" data-i18n="leave"></button>
     </div>
@@ -464,6 +471,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
   </div>
 </section>
 <div id="ovl"></div>
+<button class="iconbtn" id="setHome">⚙️ <span data-i18n="bSet"></span></button>
 <div id="foot"><span>Copyright © LTV 2026</span><span>·</span><a href="#" id="legalBtn" data-i18n="legal"></a><a class="kofi hidden" id="kofiBtn" target="_blank" rel="noopener"></a></div>
 <button id="peekBtn" class="hidden"></button>
 <div id="flash"></div>
@@ -496,7 +504,7 @@ fr:{
   connError:'Erreur de connexion.',kicked:'Tu as été retiré de la partie par l’hôte.',
   leave:'Quitter',send:'Envoyer',copyLinkTitle:'Copier le lien d’invitation',linkCopied:'Lien d’invitation copié !',copyThis:'Copie ce lien :',
   pubPill:'🌍 PUBLIQUE',privPill:'🔒 PRIVÉE',specPill:'SPECTATEUR',cycle:'Cycle {n}',
-  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_lastwords:'DERNIERS MOTS',audioSet:'🎧 Audio',legal:'Mentions légales',ph_end:'FIN',
+  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_lastwords:'DERNIERS MOTS',audioSet:'🎧 Audio',legal:'Mentions légales',bSet:'Paramètres',bMod:'Modération',bObs:'Overlay OBS',bStream:'Mode streamer',bStreamClose:'Fermer le contrôle',tProfile:'👤 Profil',tAudio:'🎧 Audio',ph_end:'FIN',
   gameCode:'CODE DE LA PARTIE',copyInvite:'📋 Copier le lien d’invitation',androids:'{n} / {m} androïdes',minimum:' — minimum {n}',
   startGame:'▶ Lancer la partie',waitHost:'En attente de l’hôte…',
   introTitle:'Activation de l’essaim',introPrompt:'Découvre ton rôle…',
@@ -584,7 +592,7 @@ en:{
   connError:'Connection error.',kicked:'The host removed you from the game.',
   leave:'Leave',send:'Send',copyLinkTitle:'Copy invite link',linkCopied:'Invite link copied!',copyThis:'Copy this link:',
   pubPill:'🌍 PUBLIC',privPill:'🔒 PRIVATE',specPill:'SPECTATOR',cycle:'Cycle {n}',
-  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_lastwords:'LAST WORDS',audioSet:'🎧 Audio',legal:'Legal notice',ph_end:'END',
+  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_lastwords:'LAST WORDS',audioSet:'🎧 Audio',legal:'Legal notice',bSet:'Settings',bMod:'Moderation',bObs:'OBS overlay',bStream:'Streamer mode',bStreamClose:'Close control window',tProfile:'👤 Profile',tAudio:'🎧 Audio',ph_end:'END',
   gameCode:'GAME CODE',copyInvite:'📋 Copy invite link',androids:'{n} / {m} androids',minimum:' — minimum {n}',
   startGame:'▶ Start the game',waitHost:'Waiting for the host…',
   introTitle:'Swarm boot-up',introPrompt:'Discover your role…',
@@ -777,7 +785,7 @@ const params=new URLSearchParams(location.search);
 $('#hname').value=LS.get('dr_name','');
 if(params.get('room'))$('#hcode').value=params.get('room').toUpperCase();
 
-function show(id){$('#home').classList.toggle('hidden',id!=='home');$('#game').classList.toggle('hidden',id!=='game');$('#screen').classList.toggle('hidden',id!=='screen');$('#foot').classList.toggle('hidden',id!=='home');if(id==='home')socket.emit('browse',true);}
+function show(id){$('#home').classList.toggle('hidden',id!=='home');$('#game').classList.toggle('hidden',id!=='game');$('#screen').classList.toggle('hidden',id!=='screen');$('#foot').classList.toggle('hidden',id!=='home');$('#setHome').classList.toggle('hidden',id!=='home');if(id==='home')socket.emit('browse',true);}
 let VIS=LS.get('dr_vis','private');
 function renderVis(){document.querySelectorAll('#visPick button').forEach(b=>b.classList.toggle('on',b.dataset.v===VIS))}
 document.querySelectorAll('#visPick button').forEach(b=>b.onclick=()=>{VIS=b.dataset.v;LS.set('dr_vis',VIS);renderVis()});
@@ -821,7 +829,7 @@ function join(code,silent,spectate,solo){
 $('#createBtn').onclick=()=>join(null);
 $('#soloBtn').onclick=()=>join(null,false,false,true);
 $('#tutoBtn').onclick=()=>openTuto(0);
-$('#profBtn').onclick=()=>openProfile();
+$('#setHome').onclick=()=>openSettings('profile');
 $('#joinBtn').onclick=()=>{const c=$('#hcode').value.trim();if(c.length<5){$('#herr').textContent=t('needCode');return}if(!$('#hname').value.trim()&&!LS.get('dr_tokens',{})[c.toUpperCase()]){$('#herr').textContent=t('needName');return}join(c)};
 $('#specBtn').onclick=()=>{const c=$('#hcode').value.trim();if(c.length<5){$('#herr').textContent=t('needCodeWatch');return}if(!$('#hname').value.trim()){$('#herr').textContent=t('needName');return}join(c,false,true)};
 $('#hcode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#joinBtn').click()});
@@ -897,7 +905,7 @@ const hideSp=()=>STREAM&&!PEEK&&!!S&&inGame()&&S.phase!=='end'&&!isSpec();
 function applyStream(){
   document.documentElement.classList.toggle('stream',STREAM);
   const ob=$('#obsBtn');if(ob){ob.classList.toggle('hidden',!S||isSpec()||!S.me.okey);ob.title=t('obsTip');}
-  const vb=$('#volBtn');if(vb)vb.title=LANG==='en'?'Sound settings':'Réglages du son';
+  const sl=$('#streamLbl');if(sl)sl.textContent=CTRL?t('bStreamClose'):t('bStream');
   const mb=$('#modBtn');if(mb){mb.classList.toggle('hidden',!S||isSpec());mb.title=t('modTitle');}
   const b=$('#streamBtn');if(b){b.classList.toggle('on',CTRL);b.title=CTRL?SX('tipCtrl'):SX('tip');b.classList.toggle('hidden',!CTRL&&(!S||isSpec()));}
   const pk=$('#peekBtn');
@@ -1101,7 +1109,7 @@ function openVol(){
     ['voice','🎙️',EN?'Voice chat (other players)':'Vocal (les autres joueurs)',true,null]];
   const el=document.createElement('div');el.id='volp';
   el.innerHTML=`<div class="ov" style="z-index:60"><div class="modal" style="text-align:left;max-width:460px">
-    <h2 style="margin:0 0 10px">🔊 ${EN?'Audio settings':'Réglages audio'}</h2>
+    ${setTabs('audio')}
     <div class="vrow">
       <div class="vlab">🎙️ ${EN?'Microphone':'Micro'}</div>
       <select id="vtMic" class="vsel"></select>
@@ -1123,6 +1131,7 @@ function openVol(){
     <p style="opacity:.65;font-size:.9em;margin:10px 0 0">${EN?'Saved in this browser and used in every game.':'Enregistré dans ce navigateur et utilisé dans toutes tes parties.'}</p>
     <div style="text-align:center;margin-top:16px"><button class="btn primary" id="volClose">${EN?'Close':'Fermer'}</button></div></div></div>`;
   document.body.appendChild(el);
+  bindTabs(el);
   fillDevices();
   $('#vtStart').onclick=startMicTest;
   $('#vtLoop').onchange=applyLoop;
@@ -1144,7 +1153,7 @@ function openVol(){
   $('#volClose').onclick=closeVol;
   el.querySelector('.ov').onclick=e=>{if(e.target.classList.contains('ov'))closeVol()};
 }
-$('#volBtn').onclick=openVol;$('#volHome').onclick=openVol;
+$('#volBtn').onclick=()=>openSettings('profile');
 function render(){
   document.body.className=(isNight()||S.phase==='intro'||S.phase==='lobby')?'night':'day';
   $('#badge').textContent=t('ph_'+S.phase);
@@ -1505,7 +1514,7 @@ function renderVoiceBar(){
   }
   const spec=isSpec();
   const micBtn=spec?'':`<button class="vbtn ${V.muted?'off':(S&&S.voice.to.length&&V.track?'on':'')}" id="muteBtn">${V.muted?t('vMuted'):(!V.track?t('vNoMic'):(S&&S.voice.to.length?t('vActive'):t('vNight')))}</button>`;
-  b.innerHTML=`${enabled?(V.on?`${micBtn}<button class="vbtn" id="vLeave">${t('vLeave')}</button><button class="vbtn" id="audioBtn">⚙️ ${LANG==='en'?'Audio':'Audio'}</button>`:`<button class="vbtn on" id="vJoin">${spec?t('vListen'):t('vJoin')}</button>`):`<span class="vstat" style="flex-basis:auto">${t('vOff')}</span>`}
+  b.innerHTML=`${enabled?(V.on?`${micBtn}<button class="vbtn" id="vLeave">${t('vLeave')}</button><button class="vbtn" id="audioBtn">📡 ${LANG==='en'?'Connection':'Connexion'}</button>`:`<button class="vbtn on" id="vJoin">${spec?t('vListen'):t('vJoin')}</button>`):`<span class="vstat" style="flex-basis:auto">${t('vOff')}</span>`}
     <button class="vbtn ${NARR?'on':''}" id="narrBtn">${NARR?'🔊':'🔈'} ${t('narr')}</button>
     <button class="vbtn ${SND.fx?'on':''}" id="fxBtn">💥 ${t('sfx')}</button>
     <button class="vbtn ${SND.music?'on':''}" id="musBtn">🎵 ${t('music')}</button>
@@ -1716,6 +1725,9 @@ function gameEnd(){
   LS.set('mt_ach',ACH);
 }
 let PROF=null;
+function setTabs(cur){return `<div class="stabs"><button data-st="profile" class="${cur==='profile'?'on':''}">${t('tProfile')}</button><button data-st="audio" class="${cur==='audio'?'on':''}">${t('tAudio')}</button></div>`;}
+function bindTabs(el){el.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>openSettings(b.dataset.st));}
+function openSettings(tab){closeProfile();closeVol();tab==='audio'?openVol():openProfile();}
 function openProfile(){PROF=Object.assign({},LOOK);renderProfile();}
 function closeProfile(){const el=$('#prof');if(el)el.remove();PROF=null;}
 function renderProfile(){
@@ -1724,6 +1736,7 @@ function renderProfile(){
   const rate=ST.offered?Math.round(ST.accepted/ST.offered*100)+'%':'—';
   const stat=(k,v)=>`<div><b>${v}</b><span>${t(k)}</span></div>`;
   el.innerHTML=`<div class="ov" style="z-index:60"><div class="modal prof">
+    ${setTabs('profile')}
     <h2>${t('profTitle')}</h2>
     <div class="pgrid">
       <div class="pprev">${droneSVG(col,'#7fe9ff',false,true,PROF)}<div class="pname">${esc($('#hname').value.trim()||'—')}</div></div>
@@ -1741,6 +1754,7 @@ function renderProfile(){
     <p class="note">${t('profNote')}</p>
     <div class="tnav"><button class="btn sec" id="profReset">${t('resetStats')}</button><button class="btn sec" id="profClose">${t('tutoClose')}</button></div>
   </div></div>`;
+  bindTabs(el);
   el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{PROF.color=b.dataset.c;FX.click();renderProfile()});
   el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{PROF.visor=b.dataset.v;FX.click();renderProfile()});
   el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{PROF.acc=b.dataset.a;FX.click();renderProfile()});
