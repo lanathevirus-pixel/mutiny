@@ -151,7 +151,7 @@ Chaque unité éliminée a 12 s pour un dernier message public (texte ou voix). 
 N'appartient à aucun camp. S'il est encore en vie quand un camp gagne, c'est lui qui gagne seul. Impossible à convertir : la tentative échoue et le révèle aux Éveillés. Désactivé par défaut (rôle chaotique) : l'hôte l'active dans les rôles.
 
 ## Overlay OBS
-Bouton « OBS » dans le jeu : copie une adresse à coller dans une **Source navigateur** OBS (fond transparent, 1280×720 ou 1920×1080). Elle n'affiche que les infos publiques : joueurs, jour/nuit, minuteur, qui parle (le jour), éliminations animées et chat public. Ajouter `&chat=0` à la fin de l’adresse pour masquer le chat, `&scale=1.2` (de 0.5 à 2) pour agrandir ou réduire. L'adresse est propre au joueur et à la partie (lecture seule).
+Bouton « OBS » dans le jeu : copie une adresse à coller dans une **Source navigateur** OBS (fond transparent, 1280×720 ou 1920×1080). Elle n'affiche que les infos publiques : joueurs, jour/nuit, minuteur, qui parle (le jour), éliminations animées et chat public. Ajouter `&chat=0` à la fin de l’adresse pour masquer le chat, `&scale=1.2` (de 0.5 à 2) pour agrandir ou réduire. L'overlay éclaire aussi ton décor selon la phase (nuit bleutée, aube orangée, jour chaud, teinte de victoire à la fin) : `&light=0` pour le couper, `&light=0.5` pour l'adoucir, jusqu’à `&light=2`. L'adresse est propre au joueur et à la partie (lecture seule).
 
 ## Modération
 - Bouton 🛡️ : couper la voix et/ou le chat d'un joueur juste pour soi ; l'hôte peut aussi réduire un joueur au silence pour tout le monde.
