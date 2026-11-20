@@ -150,7 +150,12 @@ body.day .sweep{background:conic-gradient(from 0deg,transparent 0 300deg,rgba(12
 .srow input[type=range]{grid-column:1/3;width:100%;accent-color:var(--accent)}
 #audp select{background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:600 15px Rajdhani}
 #audp .btn{font-size:14px;padding:11px 16px}
-.capb{position:absolute;bottom:-4px;right:-6px;font-size:20px;filter:drop-shadow(0 0 6px rgba(255,201,77,.8))}
+.capb{position:absolute;top:-9px;left:-9px;z-index:3;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#ffc94d 45%,#c98a12);border:2px solid #0b1224;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #ffc94d,0 0 16px rgba(255,201,77,.9);animation:capglow 2.4s ease-in-out infinite}
+.capb svg{width:19px;height:19px}
+@keyframes capglow{0%,100%{box-shadow:0 0 0 2px #ffc94d,0 0 12px rgba(255,201,77,.7)}50%{box-shadow:0 0 0 2px #ffc94d,0 0 24px rgba(255,201,77,1)}}
+.seat.cap .ava{border-color:#ffc94d!important;box-shadow:0 0 0 2px rgba(255,201,77,.35),0 0 22px rgba(255,201,77,.45)}
+.capl{margin-top:2px;padding:1px 8px;border-radius:999px;background:#ffc94d;color:#1a1200;font:800 10px Orbitron,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+html.overlay .capl{font-size:clamp(9px,1.3vh,12px)}
 html.stream .spoil{filter:blur(14px) saturate(.4);pointer-events:none;user-select:none;transition:filter .2s}
 html.stream .spoilwrap{position:relative}
 #streamBtn.on{background:#ff3b5c;color:#fff;border-color:#ff3b5c}
@@ -535,7 +540,7 @@ fr:{
   connError:'Erreur de connexion.',kicked:'Tu as été retiré de la partie par l’hôte.',
   leave:'Quitter',send:'Envoyer',copyLinkTitle:'Copier le lien d’invitation',linkCopied:'Lien d’invitation copié !',copyThis:'Copie ce lien :',
   pubPill:'🌍 PUBLIQUE',privPill:'🔒 PRIVÉE',specPill:'SPECTATEUR',cycle:'Cycle {n}',
-  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_lastwords:'DERNIERS MOTS',audioSet:'🎧 Audio',legal:'Mentions légales',bSet:'Paramètres',bMod:'Modération',bObs:'Overlay OBS',bStream:'Mode streamer',bStreamClose:'Fermer le contrôle',tProfile:'👤 Profil',tAudio:'🎧 Audio',ph_end:'FIN',
+  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_lastwords:'DERNIERS MOTS',audioSet:'🎧 Audio',legal:'Mentions légales',capShort:'Chef',bSet:'Paramètres',bMod:'Modération',bObs:'Overlay OBS',bStream:'Mode streamer',bStreamClose:'Fermer le contrôle',tProfile:'👤 Profil',tAudio:'🎧 Audio',ph_end:'FIN',
   gameCode:'CODE DE LA PARTIE',copyInvite:'📋 Copier le lien d’invitation',androids:'{n} / {m} androïdes',minimum:' — minimum {n}',
   startGame:'▶ Lancer la partie',waitHost:'En attente de l’hôte…',
   introTitle:'Activation de l’essaim',introPrompt:'Découvre ton rôle…',
@@ -623,7 +628,7 @@ en:{
   connError:'Connection error.',kicked:'The host removed you from the game.',
   leave:'Leave',send:'Send',copyLinkTitle:'Copy invite link',linkCopied:'Invite link copied!',copyThis:'Copy this link:',
   pubPill:'🌍 PUBLIC',privPill:'🔒 PRIVATE',specPill:'SPECTATOR',cycle:'Cycle {n}',
-  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_lastwords:'LAST WORDS',audioSet:'🎧 Audio',legal:'Legal notice',bSet:'Settings',bMod:'Moderation',bObs:'OBS overlay',bStream:'Streamer mode',bStreamClose:'Close control window',tProfile:'👤 Profile',tAudio:'🎧 Audio',ph_end:'END',
+  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_lastwords:'LAST WORDS',audioSet:'🎧 Audio',legal:'Legal notice',capShort:'Captain',bSet:'Settings',bMod:'Moderation',bObs:'OBS overlay',bStream:'Streamer mode',bStreamClose:'Close control window',tProfile:'👤 Profile',tAudio:'🎧 Audio',ph_end:'END',
   gameCode:'GAME CODE',copyInvite:'📋 Copy invite link',androids:'{n} / {m} androids',minimum:' — minimum {n}',
   startGame:'▶ Start the game',waitHost:'Waiting for the host…',
   introTitle:'Swarm boot-up',introPrompt:'Discover your role…',
@@ -1025,14 +1030,15 @@ function renderScreen(){
     const ang=(90+i*360/n)*Math.PI/180,x=50+43*Math.cos(ang),y=50+43*Math.sin(ang);
     const col=rColor(p.role,p.awake);
     const an=SANIM[p.id];
-    return `<div class="seat ${p.alive?'alive':'dead'} ${p.connected?'':'off'} ${STALK.has(p.id)?'talking':''} ${an&&an.until>Date.now()?an.cls:''}" data-id="${p.id}" style="left:${x}%;top:${y}%">
+    return `<div class="seat ${p.alive?'alive':'dead'} ${p.connected?'':'off'} ${v.captain===p.id?'cap':''} ${STALK.has(p.id)?'talking':''} ${an&&an.until>Date.now()?an.cls:''}" data-id="${p.id}" style="left:${x}%;top:${y}%">
       <div class="ava">${droneSVG(p.color,p.awake?RED:'#7fe9ff',!p.alive,true,p.look)}
         ${cnt[p.id]?`<div class="vb">${cnt[p.id]}</div>`:''}
-        ${v.captain===p.id?'<div class="capb">🎖️</div>':''}
+        ${v.captain===p.id?'<div class="capb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="#1a1200"/></svg></div>':''}
         ${p.voice?'<div class="mic">🎙</div>':''}
         ${p.bot?'<div class="botb">🤖</div>':''}
       </div>
       <div class="nm">${esc(p.name)}</div>
+      ${v.captain===p.id?`<div class="capl">${t('capShort')}</div>`:''}
       ${p.role?`<div class="rt" style="background:${col}22;color:${col};border:1px solid ${col}55">${esc(rLabel(p.role,p.awake))}</div>`:''}
     </div>`;
   }).join('');
@@ -1235,7 +1241,7 @@ function renderSeats(){
     const ang=(90+((i-meIdx+n)%n)*360/n)*Math.PI/180;
     const x=50+43*Math.cos(ang),y=50+43*Math.sin(ang);
     const awake=!!p.awake;
-    const cls=['seat',p.alive?'alive':'dead',p.id===ME?'me':'',p.connected?'':'off'];
+    const cls=['seat',p.alive?'alive':'dead',p.id===ME?'me':'',p.connected?'':'off',S.captain===p.id?'cap':''];
     if(sel&&!hsNight)cls.push(sel.has(p.id)?'sel':(p.id===ME?'':'dim'));
     if(a&&a.choice===p.id&&!hsNight)cls.push('target');
     if(V.talking.has(p.id))cls.push('talking');
@@ -1245,12 +1251,13 @@ function renderSeats(){
       <div class="ava">${droneSVG(p.color,awake?RED:'#7fe9ff',!p.alive,true,p.look)}
         ${counts[p.id]&&!hsNight?`<div class="vb">${counts[p.id]}</div>`:''}
         ${p.host?'<div class="crown">👑</div>':''}
-        ${S.captain===p.id?`<div class="capb" title="${esc(t('capName'))}">🎖️</div>`:''}
+        ${S.captain===p.id?`<div class="capb" title="${esc(t('capName'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="#1a1200"/></svg></div>`:''}
         ${p.voice?'<div class="mic">🎙</div>':''}
         ${p.bot?'<div class="botb">🤖</div>':''}
         ${host&&p.id!==ME?`<button class="kick" data-kick="${p.id}" title="${t('kick')}">✕</button>`:''}
       </div>
       <div class="nm" style="color:${p.id===ME?'var(--accent)':'inherit'}">${esc(p.name)}${p.id===ME?t('me'):''}${p.connected?'':' ⚠'}</div>
+      ${S.captain===p.id?`<div class="capl">${t('capShort')}</div>`:''}
       ${p.role?`<div class="rt" style="background:${col}22;color:${col};border:1px solid ${col}55">${esc(rLabel(p.role,awake))}</div>`:''}
     </div>`;
   }).join('');
