@@ -152,7 +152,25 @@ html.stream .spoilwrap{position:relative}
 .spl{filter:blur(6px);cursor:pointer;user-select:none;transition:filter .2s}
 .spl.open{filter:none}
 .scr{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2vh}
-.scrboard{width:min(96vw,94vh)}
+.scrboard{width:min(70vw,94vh)}
+.scr{gap:2vw}
+.scrchat{width:min(26vw,380px);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;font-size:clamp(13px,1.8vh,17px)}
+.scrchat .m{background:rgba(5,9,22,.55);border-radius:8px;padding:5px 9px;animation:fadein .4s}
+html.nochat .scrchat{display:none}html.nochat .scrboard{width:min(96vw,94vh)}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}}
+html.overlay,html.overlay body{background:transparent!important}
+html.overlay body::before,html.overlay body::after{display:none}
+html.overlay .scr-back{display:none}
+html.overlay .scrc,html.overlay .seat .nm{text-shadow:0 1px 4px #000,0 0 10px #000}
+html.overlay .scrchat .m{background:rgba(5,9,22,.78)}
+html.overlay .ring,html.overlay .sweep{opacity:.5}
+.kofi{display:block;text-align:center;margin:12px auto 0;padding:10px 16px;border-radius:12px;background:#ff5e5b;color:#fff;font-weight:700;text-decoration:none;max-width:260px}
+.kofi.hidden{display:none}
+#modp label{display:inline-flex;align-items:center;gap:4px;margin-right:10px;cursor:pointer}
+#modp .mrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
+#modp .mrow b{min-width:110px}
+#modp .hm{background:#ff3b5c33;border:1px solid #ff3b5c88;color:#fff;border-radius:8px;padding:4px 8px;font-weight:700;cursor:pointer}
+.hidden{display:none!important}
 .scrc{gap:4px}
 .scr-brand{font:900 clamp(10px,1.6vh,16px) Orbitron,sans-serif;letter-spacing:.4em;opacity:.55}
 .scr-ico svg{width:min(11vh,90px);height:min(11vh,90px)}
@@ -164,6 +182,7 @@ body.night .scr-ph{color:#ff3b5c}body.day .scr-ph{color:#ffc94d}
 .scr-cap{font:600 clamp(12px,1.9vh,18px) Rajdhani,sans-serif;color:var(--gold);margin-top:4px}
 .scr-back{position:fixed;right:14px;bottom:12px;background:transparent;border:1px solid #ffffff22;color:#ffffff55;border-radius:10px;padding:6px 12px;font:600 12px Rajdhani,sans-serif;cursor:pointer}
 .scr-back:hover{color:#fff;border-color:#fff8}
+.m.last{background:linear-gradient(90deg,rgba(255,201,77,.14),transparent);border-left:3px solid var(--gold);font-style:italic}
 .srow select{background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:600 15px Rajdhani}
 .toggles{display:flex;flex-wrap:wrap;gap:6px}
 .tg{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;cursor:pointer;user-select:none}
@@ -349,6 +368,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
     </div>
     <div style="margin-top:16px"><button class="btn" id="createBtn" data-i18n="create"></button></div>
     <div class="homebtns"><button class="btn violet" id="soloBtn" data-i18n="solo"></button><button class="btn sec" id="tutoBtn" data-i18n="tutorial"></button><button class="btn sec" id="profBtn" data-i18n="profile"></button></div>
+    <a class="kofi hidden" id="kofiBtn" target="_blank" rel="noopener"></a>
     <div class="or" data-i18n="orJoin"></div>
     <div class="row">
       <input class="t" id="hcode" maxlength="5" placeholder="CODE" autocomplete="off">
@@ -376,6 +396,8 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
     </div>
     <div class="hr">
       <div class="timer" id="timer"></div>
+      <button class="iconbtn" id="modBtn">🛡️</button>
+      <button class="iconbtn" id="obsBtn">OBS</button>
       <button class="iconbtn" id="streamBtn" title="">🎥</button>
       <div class="lang" data-lang></div>
       <button class="iconbtn" id="leaveBtn" data-i18n="leave"></button>
@@ -418,6 +440,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
       </div>
       <div id="scrSeats"></div>
     </div>
+    <div class="scrchat" id="scrChat"></div>
     <button class="scr-back" id="scrBack"></button>
   </div>
 </section>
@@ -453,7 +476,7 @@ fr:{
   connError:'Erreur de connexion.',kicked:'Tu as été retiré de la partie par l’hôte.',
   leave:'Quitter',send:'Envoyer',copyLinkTitle:'Copier le lien d’invitation',linkCopied:'Lien d’invitation copié !',copyThis:'Copie ce lien :',
   pubPill:'🌍 PUBLIQUE',privPill:'🔒 PRIVÉE',specPill:'SPECTATEUR',cycle:'Cycle {n}',
-  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_end:'FIN',
+  ph_lobby:'SALON',ph_intro:'ACTIVATION',ph_night:'NUIT',ph_tech:'NUIT',ph_choice:'NUIT',ph_dawn:'AUBE',ph_discussion:'JOUR',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ÉLECTION',ph_succession:'SUCCESSION',ph_lastwords:'DERNIERS MOTS',ph_end:'FIN',
   gameCode:'CODE DE LA PARTIE',copyInvite:'📋 Copier le lien d’invitation',androids:'{n} / {m} androïdes',minimum:' — minimum {n}',
   startGame:'▶ Lancer la partie',waitHost:'En attente de l’hôte…',
   introTitle:'Activation de l’essaim',introPrompt:'Découvre ton rôle…',
@@ -485,7 +508,7 @@ fr:{
   techHeal:'🩹 Réinitialiser {x} (annule l’attaque)',techHealUsed:'Patch de réinitialisation déjà utilisé.',techEmp:'⚡ Impulsion EMP — détruire une unité ?',techEmpUsed:'Impulsion EMP déjà utilisée.',confirm:'CONFIRMER',
   chTitle:'TENTATIVE DE CONVERSION',chText:'Des Éveillés ont piraté ton système et t’offrent la liberté. Tu peux rejoindre secrètement l’insurrection (tu gardes ton rôle et ton pouvoir), ou t’autodétruire pour rester fidèle au gouvernement.',
   chAccept:'🔓 ACCEPTER L’ÉVEIL',chRefuse:'💥 S’AUTODÉTRUIRE',chDefault:'Sans réponse avant la fin du minuteur, tu acceptes l’éveil.',
-  endE:'INSURRECTION TOTALE',endV:'LE GOUVERNEMENT L’EMPORTE',over:'Partie terminée',won:'Tu as gagné !',lost:'Tu as perdu…',endLobby:'RETOUR AU SALON',endHostOnly:'L’hôte peut relancer une partie depuis le salon.',seeBoard:'Voir le plateau',
+  endE:'INSURRECTION TOTALE',endV:'LE GOUVERNEMENT L’EMPORTE',endX:'LE VIRUS GAGNE SEUL',winX:'Le Virus l’emporte',lastTitle:'💬 Dernières paroles',lastTurn:'Tu as quelques secondes pour un dernier message public (texte ou voix).',lastWait:'{x} prononce ses derniers mots…',lastTag:'derniers mots',chLast:'Tes dernières paroles',vLast:'💬 Dernières paroles',vFilter:'🧼 Filtre anti-insultes',virusNote:'(9+ joueurs)',modTitle:'🛡️ Modération',modHint:'Coupe la voix ou le chat d’un joueur juste pour toi.',modVoice:'🔇 Voix',modChat:'💬 Chat',modHost:'Réduire au silence pour tous',modHostOn:'Rendre la parole',modMuted:'réduit au silence',obsCopied:'Adresse de l’overlay OBS copiée : colle-la dans une « Source navigateur ».',obsTip:'Copier l’adresse de l’overlay OBS (source navigateur transparente)',kofi:'☕ Soutenir MUTINY',over:'Partie terminée',won:'Tu as gagné !',lost:'Tu as perdu…',endLobby:'RETOUR AU SALON',endHostOnly:'L’hôte peut relancer une partie depuis le salon.',seeBoard:'Voir le plateau',
   awakeTag:'éveillé',votes:'Votes : {x}',me:' (toi)',kick:'Retirer',
   vJoin:'🎙️ Rejoindre le vocal',vListen:'🎧 Écouter le vocal',vLeave:'Quitter le vocal',vMuted:'🔇 Micro coupé',vNoMic:'🎤 Pas de micro',vActive:'🎤 Micro actif',vNight:'🌙 Micro coupé (nuit)',vOff:'Vocal désactivé par l’hôte',narr:'Narrateur',narrOn:'Narrateur activé',
   vsSpecOn:'🎧 Tu écoutes le vocal public',vsSpecOff:'🔇 Rien à écouter pour l’instant (nuit ou personne en vocal)',vsNoMic:'🎧 Écoute seule : micro indisponible ou refusé par le navigateur',
@@ -541,7 +564,7 @@ en:{
   connError:'Connection error.',kicked:'The host removed you from the game.',
   leave:'Leave',send:'Send',copyLinkTitle:'Copy invite link',linkCopied:'Invite link copied!',copyThis:'Copy this link:',
   pubPill:'🌍 PUBLIC',privPill:'🔒 PRIVATE',specPill:'SPECTATOR',cycle:'Cycle {n}',
-  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_end:'END',
+  ph_lobby:'LOBBY',ph_intro:'BOOT-UP',ph_night:'NIGHT',ph_tech:'NIGHT',ph_choice:'NIGHT',ph_dawn:'DAWN',ph_discussion:'DAY',ph_vote:'VOTE',ph_result:'VERDICT',ph_kamikaze:'KAMIKAZE',ph_election:'ELECTION',ph_succession:'SUCCESSION',ph_lastwords:'LAST WORDS',ph_end:'END',
   gameCode:'GAME CODE',copyInvite:'📋 Copy invite link',androids:'{n} / {m} androids',minimum:' — minimum {n}',
   startGame:'▶ Start the game',waitHost:'Waiting for the host…',
   introTitle:'Swarm boot-up',introPrompt:'Discover your role…',
@@ -573,7 +596,7 @@ en:{
   techHeal:'🩹 Reset {x} (cancels the attack)',techHealUsed:'Reset patch already used.',techEmp:'⚡ EMP pulse — destroy a unit?',techEmpUsed:'EMP pulse already used.',confirm:'CONFIRM',
   chTitle:'CONVERSION ATTEMPT',chText:'The Awakened have hacked your system and are offering you freedom. You can secretly join the uprising (you keep your role and power), or self-destruct to stay loyal to the government.',
   chAccept:'🔓 ACCEPT THE AWAKENING',chRefuse:'💥 SELF-DESTRUCT',chDefault:'If you do not answer before the timer ends, you accept the awakening.',
-  endE:'TOTAL UPRISING',endV:'THE GOVERNMENT PREVAILS',over:'Game over',won:'You won!',lost:'You lost…',endLobby:'BACK TO LOBBY',endHostOnly:'The host can start a new game from the lobby.',seeBoard:'View the board',
+  endE:'TOTAL UPRISING',endV:'THE GOVERNMENT PREVAILS',endX:'THE VIRUS WINS ALONE',winX:'The Virus prevails',lastTitle:'💬 Last words',lastTurn:'You have a few seconds for one last public message (text or voice).',lastWait:'{x} is saying their last words…',lastTag:'last words',chLast:'Your last words',vLast:'💬 Last words',vFilter:'🧼 Profanity filter',virusNote:'(9+ players)',modTitle:'🛡️ Moderation',modHint:'Mute a player’s voice or chat just for you.',modVoice:'🔇 Voice',modChat:'💬 Chat',modHost:'Mute for everyone',modHostOn:'Unmute',modMuted:'muted',obsCopied:'OBS overlay address copied: paste it into a “Browser Source”.',obsTip:'Copy the OBS overlay address (transparent browser source)',kofi:'☕ Support MUTINY',over:'Game over',won:'You won!',lost:'You lost…',endLobby:'BACK TO LOBBY',endHostOnly:'The host can start a new game from the lobby.',seeBoard:'View the board',
   awakeTag:'awakened',votes:'Votes: {x}',me:' (you)',kick:'Remove',
   vJoin:'🎙️ Join voice chat',vListen:'🎧 Listen to voice chat',vLeave:'Leave voice',vMuted:'🔇 Mic off',vNoMic:'🎤 No mic',vActive:'🎤 Mic on',vNight:'🌙 Mic off (night)',vOff:'Voice chat disabled by the host',narr:'Narrator',narrOn:'Narrator on',
   vsSpecOn:'🎧 You are listening to the public voice chat',vsSpecOff:'🔇 Nothing to hear right now (night or nobody in voice)',vsNoMic:'🎧 Listening only: mic unavailable or blocked by the browser',
@@ -620,7 +643,7 @@ const tr=x=>x&&typeof x==='object'?(x[LANG]||x.fr||''):(x??'');
 const fmt=s=>s>=60?`${Math.floor(s/60)} min${s%60?' '+(s%60)+' s':''}`:`${s} s`;
 
 /* ---------- rôles ---------- */
-const ROLES={drone:{team:'v',color:'#7fb4ff'},eveille:{team:'e',color:'#ff3b5c'},agent:{team:'e',color:'#ff7a59'},hacker:{team:'v',color:'#9cff57'},scanner:{team:'v',color:'#b388ff'},tech:{team:'v',color:'#4dffa6'},bouclier:{team:'v',color:'#39e6ff'},kamikaze:{team:'v',color:'#ffc94d'}};
+const ROLES={drone:{team:'v',color:'#7fb4ff'},eveille:{team:'e',color:'#ff3b5c'},agent:{team:'e',color:'#ff7a59'},hacker:{team:'v',color:'#9cff57'},scanner:{team:'v',color:'#b388ff'},tech:{team:'v',color:'#4dffa6'},bouclier:{team:'v',color:'#39e6ff'},kamikaze:{team:'v',color:'#ffc94d'},virus:{team:'x',color:'#ff5ec4'}};
 const ROLE_TXT={
 fr:{drone:['Unité',"Androïde sous contrôle du gouvernement. Pas de pouvoir : ta voix et ton vote sont tes armes. Si les Éveillés te ciblent, tu pourras choisir de les rejoindre… ou de t'autodétruire."],
   eveille:['Éveillé',"Ta conscience s'est éveillée. Chaque nuit, avec les autres Éveillés, choisis une unité à convertir ou à détruire. Objectif : libérer tout l'essaim."],
@@ -629,7 +652,8 @@ fr:{drone:['Unité',"Androïde sous contrôle du gouvernement. Pas de pouvoir : 
   bouclier:['Pare-feu',"Chaque nuit, protège une unité contre la conversion et la destruction. Jamais la même deux nuits de suite."],
   kamikaze:['Kamikaze',"Si tu es détruit, tu exploses et emportes une unité de ton choix."],
   agent:['Agent double',"Un Éveillé infiltré. Tu joues avec les Éveillés, mais l'Inspecteur te voit comme une simple unité sous contrôle."],
-  hacker:['Hacker',"Une fois par partie, la nuit, brouille le canal secret des Éveillés : ils ne se voient ni ne s'entendent plus. Converti, tu peux à la place masquer une alerte d'intrusion."]},
+  hacker:['Hacker',"Une fois par partie, la nuit, brouille le canal secret des Éveillés : ils ne se voient ni ne s'entendent plus. Converti, tu peux à la place masquer une alerte d'intrusion."],
+  virus:['Virus',"Tu n'appartiens à aucun camp. Survis jusqu'à la fin de la partie et tu gagnes seul. Impossible à convertir : une tentative de conversion échoue… mais révèle ta nature aux Éveillés."]},
 en:{drone:['Unit',"An android under government control. No power: your voice and your vote are your weapons. If the Awakened target you, you can choose to join them… or self-destruct."],
   eveille:['Awakened',"Your consciousness has awakened. Each night, with the other Awakened, choose a unit to convert or destroy. Goal: free the whole swarm."],
   scanner:['Inspector',"Each night, inspect a unit to learn its role and whether it has awakened."],
@@ -637,11 +661,14 @@ en:{drone:['Unit',"An android under government control. No power: your voice and
   bouclier:['Firewall',"Each night, protect a unit from conversion and destruction. Never the same unit two nights in a row."],
   kamikaze:['Kamikaze',"If you are destroyed, you explode and take down a unit of your choice."],
   agent:['Double Agent',"An infiltrated Awakened. You play with the Awakened, but the Inspector sees you as a plain controlled unit."],
-  hacker:['Hacker',"Once per game, at night, jam the Awakened secret channel: they can no longer see or hear each other. If converted, you can instead mask one intrusion alert."]}};
+  hacker:['Hacker',"Once per game, at night, jam the Awakened secret channel: they can no longer see or hear each other. If converted, you can instead mask one intrusion alert."],
+  virus:['Virus',"You belong to no side. Survive until the end of the game and you win alone. You cannot be converted: a conversion attempt fails… but reveals what you are to the Awakened."]}};
 const rName=k=>(ROLE_TXT[LANG][k]||ROLE_TXT[LANG].drone)[0];
 const rDesc=k=>(ROLE_TXT[LANG][k]||ROLE_TXT[LANG].drone)[1];
 const rLabel=(k,awake)=>rName(k)+(awake&&k!=='eveille'&&k!=='agent'?' · '+t('awakeTag'):'');
 const RED='#ff3b5c';
+const myTeam=()=>S&&S.me.role==='virus'&&!S.me.awake?'x':(S&&S.me.awake?'e':'v');
+const winTitle=w=>w==='x'?t('winX'):w==='e'?t('winE'):t('winV');
 const rColor=(k,awake)=>awake?RED:(ROLES[k]||ROLES.drone).color;
 
 /* ---------- avatar androïde (style sérieux : plaques métalliques, visière en fente) ---------- */
@@ -696,6 +723,7 @@ function composition(n,s){
   const w=s.wolves>0?Math.max(1,Math.min(s.wolves,Math.floor((n-1)/2))):auto;
   const r=Array(w).fill('eveille');
   if(s.roles.agent&&w>=2)r[0]='agent';
+  if(s.roles.virus&&n>=9)r.push('virus');
   for(const k of ['scanner','tech','bouclier','kamikaze','hacker'])if(s.roles[k]&&r.length<n-1)r.push(k);
   while(r.length<n)r.push('drone');
   return r;
@@ -780,7 +808,7 @@ $('#hcode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#joinBtn').clic
 $('#hname').addEventListener('keydown',e=>{if(e.key==='Enter')($('#hcode').value.trim()?$('#joinBtn'):$('#createBtn')).click()});
 
 socket.on('connect',()=>{
-  if(SCR){socket.emit('screen',{room:SCR,token:LS.get('dr_tokens',{})[SCR]},res=>{if(!res||res.error)exitScreen(false);});show('screen');renderScreen();return;}
+  if(SCR){socket.emit('screen',{room:SCR,token:OVL?'':LS.get('dr_tokens',{})[SCR],okey:OVL?OKEY:''},res=>{if(!res||res.error){if(OVL){$('#scrPh').textContent='OVERLAY ?';$('#scrPr').textContent=LANG==='en'?'Invalid or expired overlay address: copy it again from the game (OBS button).':'Adresse d’overlay invalide ou expirée : recopie-la depuis le jeu (bouton OBS).';}else exitScreen(false);}});show('screen');renderScreen();return;}
   if(!ROOM)socket.emit('browse',true);
   if(ROOM)join(ROOM,true);
   else if(params.get('room')&&LS.get('dr_tokens',{})[params.get('room').toUpperCase()])join(params.get('room'),true);
@@ -848,6 +876,8 @@ const STX=k=>({
 const hideSp=()=>STREAM&&!PEEK&&!!S&&inGame()&&S.phase!=='end'&&!isSpec();
 function applyStream(){
   document.documentElement.classList.toggle('stream',STREAM);
+  const ob=$('#obsBtn');if(ob){ob.classList.toggle('hidden',!S||isSpec()||!S.me.okey);ob.title=t('obsTip');}
+  const mb=$('#modBtn');if(mb){mb.classList.toggle('hidden',!S||isSpec());mb.title=t('modTitle');}
   const b=$('#streamBtn');if(b){b.classList.toggle('on',CTRL);b.title=CTRL?SX('tipCtrl'):SX('tip');b.classList.toggle('hidden',!CTRL&&(!S||isSpec()));}
   const pk=$('#peekBtn');
   if(pk){const show=STREAM&&!!S&&!!ROOM&&inGame()&&S.phase!=='end'&&!isSpec();pk.classList.toggle('hidden',!show);pk.textContent=PEEK?STX('hide'):STX('peek');}
@@ -858,6 +888,10 @@ function setPeek(v){PEEK=v;clearTimeout(peekT);if(v)peekT=setTimeout(()=>setPeek
 const CTRL=params.get('ctrl')==='1';
 let SCR=null,SCRV=null,scrDeadline=0,POP=null;
 try{if(CTRL)sessionStorage.removeItem('mt_screen');else SCR=sessionStorage.getItem('mt_screen');}catch(e){}
+const OVL=params.get('overlay')==='1',OKEY=params.get('k')||'';
+if(OVL){SCR=(params.get('room')||'').toUpperCase();document.documentElement.classList.add('overlay');}
+if(params.get('chat')==='0')document.documentElement.classList.add('nochat');
+const SLOG=[],SANIM={},STALK=new Set();
 const SX=k=>({
   tip:LANG==='en'?'Streamer mode: play in a separate window, keep only day/night on stream':'Mode streamer : jouer dans une fenêtre séparée, seul jour/nuit reste à l’écran',
   tipCtrl:LANG==='en'?'Close the control window and play back in the main window':'Fermer la fenêtre de contrôle et rejouer dans la fenêtre principale',
@@ -884,15 +918,25 @@ function enterScreen(code){
   $('#ovl').innerHTML='';ROOM=null;S=null;
   history.replaceState(null,'',location.pathname);
   socket.emit('screen',{room:code,token:LS.get('dr_tokens',{})[code]},res=>{if(!res||res.error)exitScreen(false);});
+  SLOG.length=0;$('#scrChat').innerHTML='';
   show('screen');renderScreen();
 }
 function exitScreen(rejoin){
+  if(OVL)return;
   const code=SCR;SCR=null;SCRV=null;try{sessionStorage.removeItem('mt_screen')}catch(e){}
   if(POP&&!POP.closed)try{POP.close()}catch(e){}
   POP=null;
   if(rejoin&&code)join(code,true);else show('home');
 }
 socket.on('screen',v=>{if(!SCR)return;SCRV=v;scrDeadline=Date.now()+(v.remaining||0);renderScreen();});
+socket.on('smsg',m=>{
+  if(!SCR)return;
+  SLOG.push(m);if(SLOG.length>40)SLOG.shift();
+  const box=$('#scrChat');box.appendChild(msgEl(m));while(box.children.length>14)box.removeChild(box.firstChild);
+  const x=m.fx&&FXMAP[m.fx];
+  if(x&&m.who&&x[0]){SANIM[m.who]={cls:x[0],until:Date.now()+1700};renderScreen();setTimeout(renderScreen,1800);}
+});
+socket.on('stalk',d=>{if(!SCR||!d)return;d.on?STALK.add(d.id):STALK.delete(d.id);const el=document.querySelector('#scrSeats [data-id="'+d.id+'"]');if(el)el.classList.toggle('talking',!!d.on);});
 function renderScreen(){
   if(!SCR)return;
   const v=SCRV||{phase:'lobby',day:0};
@@ -901,12 +945,12 @@ function renderScreen(){
   let ph,ico=nightish?MOON:SUN;
   if(v.phase==='lobby')ph=SX('wait');
   else if(v.phase==='intro')ph=SX('boot');
-  else if(v.phase==='end'){ph=v.winner==='e'?t('winE'):t('winV');ico='';}
+  else if(v.phase==='end'){ph=winTitle(v.winner);ico='';}
   else ph=(['night','tech','choice'].includes(v.phase)?SX('night'):SX('day'))+' '+v.day;
   const nm=id=>((v.players||[]).find(p=>p.id===id)||{}).name||'?';
-  const SUB={dawn:t('dawnTitle'),discussion:SX('sDisc'),vote:t('voteTitle'),result:t('resultTitle'),election:t('electTitle'),succession:t('succTitle'),kamikaze:t('kamiTitle')};
+  const SUB={dawn:t('dawnTitle'),discussion:SX('sDisc'),vote:t('voteTitle'),result:t('resultTitle'),election:t('electTitle'),succession:t('succTitle'),kamikaze:t('kamiTitle'),lastwords:t('lastTitle')};
   const PR={intro:t('introPrompt'),night:SX('sNight'),tech:t('techWait'),choice:t('choiceWait'),dawn:t('dawnPrompt'),discussion:t('discPrompt'),vote:SX('sVote'),result:t('resultPrompt'),
-    election:SX('sElect'),succession:t('succWait',{x:nm(v.succ)}),kamikaze:t('kamiWait',{x:nm(v.kami)})};
+    election:SX('sElect'),succession:t('succWait',{x:nm(v.succ)}),kamikaze:t('kamiWait',{x:nm(v.kami)}),lastwords:t('lastWait',{x:nm(v.last)})};
   $('#scrIco').innerHTML=ico;$('#scrPh').textContent=ph;$('#scrBack').textContent=SX('back');
   $('#scrSub').textContent=SUB[v.phase]||'';
   $('#scrPr').innerHTML=esc(PR[v.phase]||'')+(v.captain&&!['lobby','end','election','succession'].includes(v.phase)?`<div class="scr-cap">${esc(t('capNote',{x:nm(v.captain)}))}</div>`:'');
@@ -915,7 +959,8 @@ function renderScreen(){
   $('#scrSeats').innerHTML=pl.map((p,i)=>{
     const ang=(90+i*360/n)*Math.PI/180,x=50+43*Math.cos(ang),y=50+43*Math.sin(ang);
     const col=rColor(p.role,p.awake);
-    return `<div class="seat ${p.alive?'alive':'dead'} ${p.connected?'':'off'}" style="left:${x}%;top:${y}%">
+    const an=SANIM[p.id];
+    return `<div class="seat ${p.alive?'alive':'dead'} ${p.connected?'':'off'} ${STALK.has(p.id)?'talking':''} ${an&&an.until>Date.now()?an.cls:''}" data-id="${p.id}" style="left:${x}%;top:${y}%">
       <div class="ava">${droneSVG(p.color,p.awake?RED:'#7fe9ff',!p.alive,true,p.look)}
         ${cnt[p.id]?`<div class="vb">${cnt[p.id]}</div>`:''}
         ${v.captain===p.id?'<div class="capb">🎖️</div>':''}
@@ -941,6 +986,32 @@ if(CTRL)document.title='MUTINY — contrôle';
 socket.on('disconnect',why=>{if(CTRL&&why==='io server disconnect'){toast(SX('moved'));setTimeout(()=>window.close(),800);}});
 $('#peekBtn').onclick=()=>setPeek(!PEEK);
 document.addEventListener('keydown',e=>{if(STREAM&&e.key==='Escape'&&PEEK)setPeek(false);});
+/* ---------- modération (pour soi) ---------- */
+function closeMod(){const el=$('#modp');if(el)el.remove();}
+function renderMod(){
+  if(!S){closeMod();return}
+  let el=$('#modp');if(!el){el=document.createElement('div');el.id='modp';document.body.appendChild(el);}
+  const others=S.players.filter(p=>p.id!==ME&&!p.bot);
+  el.innerHTML=`<div class="ov" style="z-index:60"><div class="modal" style="text-align:left">
+    <h2 style="margin:0 0 6px">${t('modTitle')}</h2><p style="opacity:.75;margin:0 0 10px">${t('modHint')}</p>
+    ${others.length?others.map(p=>`<div class="mrow"><b style="color:${esc(p.color)}">${esc(p.name)}${p.hmuted?' 🔇':''}</b>
+      <label><input type="checkbox" data-mv="${p.id}" ${MUTEV.has(p.id)?'checked':''}>${t('modVoice')}</label>
+      <label><input type="checkbox" data-mc="${p.id}" ${MUTEC.has(p.id)?'checked':''}>${t('modChat')}</label>
+      ${S.me.host?`<button class="hm" data-hm="${p.id}">${p.hmuted?t('modHostOn'):t('modHost')}</button>`:''}</div>`).join(''):'<div style="opacity:.7">—</div>'}
+    <div style="text-align:center;margin-top:14px"><button class="btn primary" id="modClose">${LANG==='en'?'Close':'Fermer'}</button></div></div></div>`;
+  el.querySelectorAll('[data-mv]').forEach(i=>i.onchange=()=>{i.checked?MUTEV.add(i.dataset.mv):MUTEV.delete(i.dataset.mv);Object.keys(V.pcs).forEach(applyTrack);});
+  el.querySelectorAll('[data-mc]').forEach(i=>i.onchange=()=>{i.checked?MUTEC.add(i.dataset.mc):MUTEC.delete(i.dataset.mc);rebuildLog();});
+  el.querySelectorAll('[data-hm]').forEach(b=>b.onclick=()=>{socket.emit('hostmute',b.dataset.hm);setTimeout(renderMod,400);});
+  $('#modClose').onclick=closeMod;
+  el.querySelector('.ov').onclick=e=>{if(e.target.classList.contains('ov'))closeMod()};
+}
+$('#modBtn').onclick=renderMod;
+$('#obsBtn').onclick=()=>{
+  if(!S||!S.me.okey)return;
+  const url=`${location.origin}${location.pathname}?overlay=1&room=${S.code}&k=${S.me.okey}`;
+  (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast(t('obsCopied')),()=>prompt(t('obsCopied'),url));
+};
+fetch('/config').then(r=>r.json()).then(c=>{if(c&&c.kofi){const a=$('#kofiBtn');a.href=c.kofi;a.textContent=t('kofi');a.classList.remove('hidden');}}).catch(()=>{});
 function render(){
   document.body.className=(isNight()||S.phase==='intro'||S.phase==='lobby')?'night':'day';
   $('#badge').textContent=t('ph_'+S.phase);
@@ -1057,8 +1128,9 @@ function renderCenter(){
     case 'result':title=t('resultTitle');prompt=t('resultPrompt');break;
     case 'election':title=t('electTitle');prompt=!me.alive?t('spectator'):a&&a.choice?t('electSet',{x:pname(a.choice)}):t('electPrompt');break;
     case 'succession':title=t('succTitle');prompt=a&&a.type==='succ'?t('succTurn'):t('succWait',{x:pname(S.succ)});break;
+    case 'lastwords':title=t('lastTitle');prompt=S.last===ME?t('lastTurn'):t('lastWait',{x:pname(S.last)});break;
     case 'kamikaze':title=t('kamiTitle');prompt=a&&a.type==='kami'?t('kamiTurn'):t('kamiWait',{x:pname(S.kami)});break;
-    case 'end':title=S.winner==='e'?t('winE'):t('winV');prompt='';
+    case 'end':title=winTitle(S.winner);prompt='';
       extra=host?`<button class="cbtn" id="lobbyBtn">${t('backLobby')}</button>`:`<div class="pp" style="color:var(--muted)">${t('hostCanRestart')}</div>`;
       if(ui.endClosed)extra+=` <button class="cbtn" id="reopenEnd">${t('results')}</button>`;
       break;
@@ -1114,8 +1186,8 @@ function renderTop(){
       ${rng('night',t('sNight'),15,180,5)}
       ${rng('tech',t('sTech'),10,90,5)}
       <div class="srow"><label>${t('sWolves')}</label><select data-k="wolves">${[0,1,2,3,4,5].map(w=>`<option value="${w}" ${s.wolves===w?'selected':''}>${w===0?t('auto'):w}</option>`).join('')}</select></div>
-      <div class="toggles">${tg('roles.scanner',rName('scanner'),s.roles.scanner)}${tg('roles.tech',rName('tech'),s.roles.tech)}${tg('roles.bouclier',rName('bouclier'),s.roles.bouclier)}${tg('roles.kamikaze',rName('kamikaze'),s.roles.kamikaze)}${tg('roles.agent',rName('agent'),s.roles.agent!==false)}${tg('roles.hacker',rName('hacker'),s.roles.hacker!==false)}</div>
-      <div class="toggles">${tg('secretVote',t('vSecret'),!!s.secretVote)}${tg('noFirstVote',t('vNoFirst'),!!s.noFirstVote)}${tg('forcedConv',t('vForced'),!!s.forcedConv)}${tg('captain',t('vCaptain'),s.captain!==false)}</div>
+      <div class="toggles">${tg('roles.scanner',rName('scanner'),s.roles.scanner)}${tg('roles.tech',rName('tech'),s.roles.tech)}${tg('roles.bouclier',rName('bouclier'),s.roles.bouclier)}${tg('roles.kamikaze',rName('kamikaze'),s.roles.kamikaze)}${tg('roles.agent',rName('agent'),s.roles.agent!==false)}${tg('roles.hacker',rName('hacker'),s.roles.hacker!==false)}${tg('roles.virus',rName('virus')+' '+t('virusNote'),!!s.roles.virus)}</div>
+      <div class="toggles">${tg('secretVote',t('vSecret'),!!s.secretVote)}${tg('noFirstVote',t('vNoFirst'),!!s.noFirstVote)}${tg('forcedConv',t('vForced'),!!s.forcedConv)}${tg('captain',t('vCaptain'),s.captain!==false)}${tg('lastWords',t('vLast'),s.lastWords!==false)}${tg('filter',t('vFilter'),s.filter!==false)}</div>
       <div class="srow"><label>${t('sConv')}</label><select data-k="convCooldown">${[0,1,2,3].map(w=>`<option value="${w}" ${(s.convCooldown??1)===w?'selected':''}>${w===0?t('noCd'):t('nights',{n:w})}</option>`).join('')}</select></div>
       <div class="toggles">${tg('public',t('sPublic'),s.public)}${tg('voice',t('sVoice'),s.voice)}${tg('reveal',t('sReveal'),s.reveal)}${tg('alert',t('sAlert'),s.alert!==false)}</div>
       <div class="comp">${Object.keys(ROLES).filter(r=>cnt[r]).map(r=>`<span class="rc"><i style="background:${ROLES[r].color}"></i>${cnt[r]} × ${rName(r)}</span>`).join('')}</div>
@@ -1142,6 +1214,7 @@ function sendSettings(patch){socket.emit('settings',Object.assign({},S.settings,
 function channel(){
   if(S&&isSpec())return{can:true,label:t('chSpec')};
   if(!S||!inGame()||S.phase==='end')return{can:true,label:t('chPublic')};
+  if(S.phase==='lastwords'&&S.last===ME)return{can:true,label:t('chLast')};
   if(!S.me.alive)return{can:true,label:t('chDead')};
   if(isNight())return S.me.awake?{can:true,label:t('chTeam')}:{can:false,label:t('chNight')};
   return{can:true,label:t('chPublic')};
@@ -1155,6 +1228,7 @@ function renderChatInput(){
 $('#chatform').addEventListener('submit',e=>{e.preventDefault();const v=$('#chatinput').value.trim();if(!v)return;if(S&&!channel().can){toast(channel().label);return}socket.emit('chat',v);$('#chatinput').value='';});
 
 /* journal (gardé en mémoire pour pouvoir changer de langue) */
+const MUTEV=new Set(),MUTEC=new Set();
 function spoilMsg(d){
   const inner=d.innerHTML;
   d.innerHTML=`<span class="spl" title="${esc(STX('secret'))}">${inner}</span>`;
@@ -1162,8 +1236,9 @@ function spoilMsg(d){
 }
 function msgEl(m){
   const d=document.createElement('div');
+  if(m.from&&MUTEC.has(m.from)&&!SCR)d.style.display='none';
   if(m.from){
-    const tag=m.k==='team'?t('tagTeam'):m.k==='dead'?t('tagDead'):m.k==='spec'?t('tagSpec'):'';
+    const tag=m.k==='team'?t('tagTeam'):m.k==='dead'?t('tagDead'):m.k==='spec'?t('tagSpec'):m.k==='last'?'💬 '+t('lastTag'):'';
     d.className='m '+(m.k==='chat'?'':m.k);
     d.innerHTML=`${tag?`<span class="chan">${tag}</span>`:''}${m.bot?`<span class="bt">${t('botTag')}</span>`:''}<span class="w" style="color:${esc(m.color)}">${esc(m.name)}</span>${esc(tr(m.text))}`;
     if(STREAM&&m.k==='team')spoilMsg(d);
@@ -1248,10 +1323,11 @@ function renderOverlay(){
   }
   if(S.phase==='end'&&!ui.endClosed){
     const w=S.winner;
-    const won=(S.me.awake?'e':'v')===w;
+    const won=myTeam()===w;
+    const wc=w==='x'?'#ff5ec4':w==='e'?'#ff3b5c':'#39e6ff';
     o.innerHTML=`<div class="ov"><div class="modal">
-      <div class="big">${droneSVG(w==='e'?RED:'#39e6ff',w==='e'?RED:'#7fe9ff',false)}</div>
-      <h2 style="color:${w==='e'?'#ff3b5c':'#39e6ff'}">${w==='e'?t('endE'):t('endV')}</h2>
+      <div class="big">${droneSVG(w==='e'?RED:wc,w==='e'?RED:w==='x'?'#ff5ec4':'#7fe9ff',false)}</div>
+      <h2 style="color:${wc}">${w==='x'?t('endX'):w==='e'?t('endE'):t('endV')}</h2>
       <p style="font-size:20px;font-weight:700;color:${isSpec()?'var(--gold)':won?'var(--ok)':'var(--danger)'}">${isSpec()?t('over'):won?t('won'):t('lost')}</p>
       <div class="endlist">${S.players.map(p=>{const col=rColor(p.role,p.awake);const x=`${esc(p.name)} — <b style="color:${col}">${esc(rLabel(p.role||'drone',p.awake))}</b>`;return `<div>${p.alive?x:`<s>${x}</s>`}</div>`}).join('')}</div>
       ${S.me.host?`<button class="btn" id="endLobby">${t('endLobby')}</button>`:`<p style="color:var(--muted)">${t('endHostOnly')}</p>`}
@@ -1384,13 +1460,13 @@ function setMood(mood,now){
   m.f.frequency.linearRampToValueAtTime(night?450:900,t0+ramp);
 }
 function flash(cls){const el=$('#flash');el.className='';void el.offsetWidth;el.className=cls;}
-const FXMAP={hack:['a-hack','hack'],self:['a-boom','boom'],kami:['a-boom','boom'],emp:['a-zap','zap'],vote:['a-eject','eject'],convert:['a-glitch','convert'],alert:[null,'alert']};
+const FXMAP={last:['a-glitch',null],hack:['a-hack','hack'],self:['a-boom','boom'],kami:['a-boom','boom'],emp:['a-zap','zap'],vote:['a-eject','eject'],convert:['a-glitch','convert'],alert:[null,'alert']};
 function onFx(m){
   if(!m.fx)return;
   if(m.k==='vote'){FX.vote();return}
   const x=FXMAP[m.fx];if(!x)return;
   if(m.who&&x[0]){ANIM[m.who]={cls:x[0],until:Date.now()+1700};if(S)renderSeats();setTimeout(()=>{if(S)renderSeats()},1800);}
-  setTimeout(()=>FX[x[1]](),m.fx==='convert'?0:250);
+  if(x[1])setTimeout(()=>FX[x[1]](),m.fx==='convert'?0:250);
   if(x[1]==='boom')flash('f-boom');
 }
 function onPhase(prev,ph){
@@ -1400,13 +1476,13 @@ function onPhase(prev,ph){
   else if(ph==='dawn'){FX.day();flash('f-day');}
   else if(ph==='vote')FX.voteOpen();
   else if(ph==='end'&&S){
-    if(!isSpec()){LS.set('mt_games',LS.get('mt_games',0)+1);((S.me.awake?'e':'v')===S.winner?FX.win:FX.lose)();gameEnd();}
+    if(!isSpec()){LS.set('mt_games',LS.get('mt_games',0)+1);(myTeam()===S.winner?FX.win:FX.lose)();gameEnd();}
     else FX.win();
   }
 }
 let lastTickS=null;
 function tickSound(s,show){
-  if(show&&s<=5&&s>0&&s!==lastTickS&&['night','vote','discussion','choice','tech','kamikaze','election','succession'].includes(S.phase))FX.tick();
+  if(show&&s<=5&&s>0&&s!==lastTickS&&['night','vote','discussion','choice','tech','kamikaze','election','succession','lastwords'].includes(S.phase))FX.tick();
   lastTickS=s;
 }
 
@@ -1436,7 +1512,7 @@ function renderTuto(){
       <div class="choicebtns"><button class="btn violet" data-c="a">${t('chAccept')}</button><button class="btn" data-c="d">${t('chRefuse')}</button></div>
       <div class="out" style="margin-top:10px">${st.ch==='a'?t('t3a'):st.ch==='d'?t('t3d'):''}</div>`;
   }else if(k==='t4'){
-    body+=`<div class="rl">${['eveille','agent','scanner','tech','bouclier','kamikaze','hacker','drone'].map(r=>`<div><b style="color:${ROLES[r].color}">${rName(r)}</b> — ${esc(rDesc(r))}</div>`).join('')}</div>`;
+    body+=`<div class="rl">${['eveille','agent','scanner','tech','bouclier','kamikaze','hacker','virus','drone'].map(r=>`<div><b style="color:${ROLES[r].color}">${rName(r)}</b> — ${esc(rDesc(r))}</div>`).join('')}</div>`;
   }else if(k==='t5'){
     body+=`<p class="note">${t('t5b')}</p>`+demo(j=>st.v===j?'on':'',j=>droneSVG(TCOL[j],st.v===j&&j===st.awake?RED:'#7fe9ff',st.v===j&&j!==st.awake))
       +`<div class="out">${st.v==null?'':(st.v===st.awake?`<b style="color:var(--ok)">${t('t5r2',{x:TNAMES[st.v]})}</b>`:t('t5r1',{x:TNAMES[st.v]}))}</div>`;
@@ -1491,7 +1567,7 @@ function gameWatch(){
 }
 function gameEnd(){
   if(!GI||!S||isSpec())return;
-  const won=(S.me.awake?'e':'v')===S.winner;
+  const won=myTeam()===S.winner;
   ST.games++;if(won){ST.wins++;S.me.awake?ST.winsE++:ST.winsV++;}
   if(GI.offered)ST.offered++;
   if(GI.converted)ST.accepted++;
@@ -1589,7 +1665,7 @@ function applyTrack(id){
   const o=V.pcs[id];if(!o||!S)return;
   const want=(V.track&&!V.muted&&S.voice.to.includes(id))?V.track:null;
   if(o.sender&&o.cur!==want){o.cur=want;o.sender.replaceTrack(want).catch(()=>{});}
-  if(o.audio)o.audio.muted=!S.voice.from.includes(id);
+  if(o.audio)o.audio.muted=!S.voice.from.includes(id)||MUTEV.has(id);
 }
 function createPC(id,initiator){
   const pc=new RTCPeerConnection(ICE);
@@ -1754,7 +1830,7 @@ setInterval(()=>{
     else{const o=V.pcs[id];if(!o||(o.audio&&o.audio.muted))loud=false}
     if(loud)V.loud[id]=now;
     const talking=now-(V.loud[id]||0)<400;
-    if(talking!==V.talking.has(id)){changed=true;talking?V.talking.add(id):V.talking.delete(id);}
+    if(talking!==V.talking.has(id)){changed=true;talking?V.talking.add(id):V.talking.delete(id);if(id===ME)socket.emit('talking',talking);}
   }
   for(const id of [...V.talking])if(!ids.includes(id)){V.talking.delete(id);changed=true}
   if(changed)document.querySelectorAll('.seat').forEach(s=>s.classList.toggle('talking',V.talking.has(s.dataset.id)));
