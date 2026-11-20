@@ -4,7 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MUTINY</title>
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="description" content="%OG_DESC%">
+<meta name="theme-color" content="#ff3b5c">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MUTINY">
+<meta property="og:title" content="%OG_TITLE%">
+<meta property="og:description" content="%OG_DESC%">
+<meta property="og:image" content="%OG_IMAGE%">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="MUTINY">
+<meta property="og:url" content="%OG_URL%">
+<meta property="og:locale" content="%OG_LOCALE%">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="%OG_TITLE%">
+<meta name="twitter:description" content="%OG_DESC%">
+<meta name="twitter:image" content="%OG_IMAGE%">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -154,6 +170,8 @@ body.day .sweep{background:conic-gradient(from 0deg,transparent 0 300deg,rgba(12
 .capb svg{width:19px;height:19px}
 @keyframes capglow{0%,100%{box-shadow:0 0 0 2px #ffc94d,0 0 12px rgba(255,201,77,.7)}50%{box-shadow:0 0 0 2px #ffc94d,0 0 24px rgba(255,201,77,1)}}
 .seat.cap .ava{border-color:#ffc94d!important;box-shadow:0 0 0 2px rgba(255,201,77,.35),0 0 22px rgba(255,201,77,.45)}
+.tcapb{position:absolute;top:-6px;left:-6px;width:24px;height:24px;border-radius:50%;background:#ffc94d;color:#1a1200;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 12px rgba(255,201,77,.9)}
+.tlform{display:flex;gap:8px;margin-top:10px;align-items:stretch}.tlform input{flex:1 1 auto;min-width:0;width:auto!important;margin:0}.tlform .btn{flex:0 0 auto;width:auto!important;margin:0;padding:0 22px}
 .capl{margin-top:2px;padding:1px 8px;border-radius:999px;background:#ffc94d;color:#1a1200;font:800 10px Orbitron,sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
 html.overlay .capl{font-size:clamp(9px,1.3vh,12px)}
 html.stream .spoil{filter:blur(14px) saturate(.4);pointer-events:none;user-select:none;transition:filter .2s}
@@ -398,7 +416,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 .tuto .tnav{display:flex;gap:10px;margin-top:14px}
 .tuto .tnav .btn{margin-top:0}
 .tuto .demo{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:12px 0}
-.tuto .demo .d{width:78px;text-align:center;cursor:pointer;border-radius:12px;padding:6px;border:1px solid transparent}
+.tuto .demo .d{position:relative;width:78px;text-align:center;cursor:pointer;border-radius:12px;padding:6px;border:1px solid transparent}
 .tuto .demo .d:hover{border-color:var(--line)}
 .tuto .demo .d.on{border-color:var(--gold);box-shadow:0 0 18px rgba(255,201,77,.4)}
 .tuto .demo .d svg{width:62px;height:62px}
@@ -600,7 +618,7 @@ fr:{
   hintDisc:'Astuce : écris le nom d’une unité dans le chat pour l’accuser. Les bots réagissent !',
   hintVote:'Astuce : clique sur une unité pour voter. Égalité = personne n’est désactivé.',
   hintTeam:'Astuce : tu es Éveillé. Bluffe le jour, et utilise le canal secret la nuit.',
-  tutoNext:'Suivant ▶',tutoPrev:'◀ Retour',tutoClose:'Fermer',tutoPlay:'🤖 Lancer une partie solo',tutoStep:'ÉTAPE {n} / {m}',
+  tct:'Le chef d’équipage',tc:'Au début du <b>jour 1</b>, l’essaim élit un <b style="color:#ffc94d">chef d’équipage</b>. Son vote compte <b>double</b> et départage les égalités.',tcb:'Clique sur l’unité en qui tu as confiance pour l’élire.',tcr:'{x} devient chef : son vote compte double. S’il tombe, il désigne lui-même son successeur. Attention : un chef converti reste chef… et devient une arme pour les Éveillés.',tlt:'Les dernières paroles',tl:'Chaque unité éliminée a <b>quelques secondes</b> pour un dernier message public, à l’écrit ou au micro. Accuser, se justifier, semer le doute… c’est ton dernier coup.',tlph:'Écris tes derniers mots…',tlbtn:'Envoyer',tlr:'Ton message est lu par tout l’essaim avant que ton code ne s’efface.',tvt:'Le Virus (rôle optionnel)',tv:'Le <b style="color:#ff5ec4">Virus</b> n’appartient à aucun camp : s’il est <b>encore en vie quand un camp gagne</b>, c’est lui qui gagne seul. L’hôte peut l’activer à partir de 9 joueurs.',tvbtn:'Tenter de convertir le Virus',tvr:'Conversion rejetée : code incompatible ! Le Virus est inconvertible… mais les Éveillés savent maintenant qui il est.',tutoNext:'Suivant ▶',tutoPrev:'◀ Retour',tutoClose:'Fermer',tutoPlay:'🤖 Lancer une partie solo',tutoStep:'ÉTAPE {n} / {m}',
   t1t:'L’essaim',t1:'Le gouvernement contrôle un essaim d’androïdes. Leurs yeux bleus montrent qu’ils obéissent au programme… Mais certains ont pris conscience : ce sont les <b style="color:#ff3b5c">Éveillés</b>, aux yeux rouges. Personne ne sait qui ils sont.',
   t1b:'Clique sur un androïde pour révéler sa vraie nature.',t1a:'Sous contrôle : il obéit au gouvernement.',t1c:'ÉVEILLÉ ! Il veut libérer l’essaim.',
   t2t:'La nuit',t2:'Chaque nuit, les Éveillés choisissent ensemble une cible. Ils décident de la <b>convertir</b> (la faire rejoindre leur camp) ou de la <b>détruire</b>. Après une conversion réussie, ils doivent <b>recharger</b> (par défaut une nuit), et l’essaim reçoit une <b>alerte d’intrusion</b> à l’aube.',
@@ -611,7 +629,7 @@ fr:{
   t4t:'Les rôles spéciaux',t4:'Certaines unités ont un pouvoir. Converties, elles le mettent au service des Éveillés !',
   t5t:'Le jour',t5:'Au matin, on découvre ce qui s’est passé. Puis tout le monde débat (vocal ou chat) et vote pour désactiver une unité suspecte.',
   t5b:'Essaie : vote contre l’unité la plus suspecte.',t5r1:'{x} était sous contrôle… vous avez désactivé un allié !',t5r2:'{x} était ÉVEILLÉ ! Bien joué.',
-  t6t:'Comment gagner',t6:'<b style="color:#ff3b5c">Éveillés</b> : l’insurrection totale, plus aucune unité sous contrôle en vie.<br><b style="color:#39e6ff">Gouvernement</b> : neutraliser tous les Éveillés.<br><br>Astuces : surveille les votes, méfie-toi des fausses annonces, et pense à rejoindre le vocal. Tu peux jouer avec des amis, ajouter des bots, ou t’entraîner en solo.'
+  t6t:'Comment gagner',t6:'<b style="color:#ff3b5c">Éveillés</b> : l’insurrection totale, plus aucune unité sous contrôle en vie.<br><b style="color:#39e6ff">Gouvernement</b> : neutraliser tous les Éveillés.<br><b style="color:#ff5ec4">Virus</b> (si activé) : être encore en vie à la fin.<br><br>Astuces : surveille les votes, méfie-toi des fausses annonces, et pense à rejoindre le vocal. Tu peux jouer avec des amis, ajouter des bots, ou t’entraîner en solo.'
 },
 en:{
   subtitle:'THE SWARM AWAKENS',
@@ -688,7 +706,7 @@ en:{
   hintDisc:'Tip: type a unit’s name in the chat to accuse it. Bots react!',
   hintVote:'Tip: click a unit to vote. A tie means nobody is deactivated.',
   hintTeam:'Tip: you are Awakened. Bluff by day and use the secret channel at night.',
-  tutoNext:'Next ▶',tutoPrev:'◀ Back',tutoClose:'Close',tutoPlay:'🤖 Start a solo game',tutoStep:'STEP {n} / {m}',
+  tct:'The captain',tc:'At the start of <b>day 1</b>, the swarm elects a <b style="color:#ffc94d">captain</b>. Their vote counts <b>double</b> and breaks ties.',tcb:'Click the unit you trust to elect them.',tcr:'{x} becomes captain: their vote counts double. If they fall, they appoint their own successor. Careful: a converted captain stays captain… and becomes a weapon for the Awakened.',tlt:'Last words',tl:'Every eliminated unit gets <b>a few seconds</b> for one last public message, in text or by voice. Accuse, explain yourself, sow doubt… it’s your final move.',tlph:'Type your last words…',tlbtn:'Send',tlr:'Your message is read by the whole swarm before your code fades away.',tvt:'The Virus (optional role)',tv:'The <b style="color:#ff5ec4">Virus</b> belongs to no side: if it is <b>still alive when a side wins</b>, it wins alone instead. The host can enable it from 9 players.',tvbtn:'Try to convert the Virus',tvr:'Conversion rejected: incompatible code! The Virus cannot be converted… but the Awakened now know who it is.',tutoNext:'Next ▶',tutoPrev:'◀ Back',tutoClose:'Close',tutoPlay:'🤖 Start a solo game',tutoStep:'STEP {n} / {m}',
   t1t:'The swarm',t1:'The government controls a swarm of androids. Their blue eyes show they obey the program… But some have become self-aware: the <b style="color:#ff3b5c">Awakened</b>, with red eyes. Nobody knows who they are.',
   t1b:'Click an android to reveal its true nature.',t1a:'Under control: it obeys the government.',t1c:'AWAKENED! It wants to free the swarm.',
   t2t:'The night',t2:'Each night, the Awakened pick a target together. They decide to <b>convert</b> it (make it join their side) or <b>destroy</b> it. After a successful conversion they must <b>recharge</b> (one night by default), and the swarm gets an <b>intrusion alert</b> at dawn.',
@@ -699,9 +717,9 @@ en:{
   t4t:'Special roles',t4:'Some units have a power. Once converted, they use it for the Awakened!',
   t5t:'The day',t5:'In the morning, everyone learns what happened. Then everybody debates (voice or chat) and votes to deactivate a suspicious unit.',
   t5b:'Try it: vote against the most suspicious unit.',t5r1:'{x} was under control… you deactivated an ally!',t5r2:'{x} was AWAKENED! Well played.',
-  t6t:'How to win',t6:'<b style="color:#ff3b5c">Awakened</b>: total uprising, no controlled unit left alive.<br><b style="color:#39e6ff">Government</b>: neutralize every Awakened unit.<br><br>Tips: watch the votes, beware of fake claims, and join the voice chat. Play with friends, add bots, or practice solo.'
+  t6t:'How to win',t6:'<b style="color:#ff3b5c">Awakened</b>: total uprising, no controlled unit left alive.<br><b style="color:#39e6ff">Government</b>: neutralize every Awakened unit.<br><b style="color:#ff5ec4">Virus</b> (if enabled): still be alive at the end.<br><br>Tips: watch the votes, beware of fake claims, and join the voice chat. Play with friends, add bots, or practice solo.'
 }};
-let LANG=LS.get('mt_lang',((navigator.language||'fr').toLowerCase().startsWith('fr')?'fr':'en'));
+let LANG=LS.get('mt_lang',(()=>{const q=new URLSearchParams(location.search).get('lang');return q==='en'||q==='fr'?q:((navigator.language||'fr').toLowerCase().startsWith('fr')?'fr':'en');})());
 const t=(k,o={})=>String(I18N[LANG][k]??I18N.fr[k]??k).replace(/\{(\w+)\}/g,(_,x)=>o[x]??'');
 const tr=x=>x&&typeof x==='object'?(x[LANG]||x.fr||''):(x??'');
 const fmt=s=>s>=60?`${Math.floor(s/60)} min${s%60?' '+(s%60)+' s':''}`:`${s} s`;
@@ -912,7 +930,7 @@ function onState(v){
 $('#leaveBtn').onclick=()=>{if(!ROOM)return;try{sessionStorage.removeItem('mt_room')}catch(e){}socket.emit('leave');ROOM=null;S=null;leaveVoice(false);stopMusic();$('#ovl').innerHTML='';document.body.className='night';history.replaceState(null,'',location.pathname);show('home');};
 $('#codechip').onclick=copyLink;
 function copyLink(){
-  const link=`${location.origin}${location.pathname}?room=${ROOM}`;
+  const link=`${location.origin}${location.pathname}?room=${ROOM}${LANG==='en'?'&lang=en':''}`;
   (navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject()).then(()=>toast(t('linkCopied')),()=>{prompt(t('copyThis'),link)});
 }
 
@@ -1685,7 +1703,7 @@ function closeTuto(){const el=$('#tuto');if(el)el.remove();}
 function renderTuto(){
   let el=$('#tuto');
   if(!el){el=document.createElement('div');el.id='tuto';document.body.appendChild(el);}
-  const steps=['t1','t2','t3','t4','t5','t6'],k=steps[TUTO.i],st=TUTO.st,n=steps.length;
+  const steps=['t1','t2','t3','tc','t5','tl','t4','tv','t6'],k=steps[TUTO.i],st=TUTO.st,n=steps.length;
   const demo=(cls,fn)=>`<div class="demo">${TNAMES.map((nm,j)=>`<div class="d ${cls(j)}" data-d="${j}">${fn(j)}<span>${nm}</span></div>`).join('')}</div>`;
   let body=`<p>${t(k)}</p>`;
   if(k==='t1'){
@@ -1701,6 +1719,17 @@ function renderTuto(){
       <div class="out" style="margin-top:10px">${st.ch==='a'?t('t3a'):st.ch==='d'?t('t3d'):''}</div>`;
   }else if(k==='t4'){
     body+=`<div class="rl">${['eveille','agent','scanner','tech','bouclier','kamikaze','hacker','virus','drone'].map(r=>`<div><b style="color:${ROLES[r].color}">${rName(r)}</b> — ${esc(rDesc(r))}</div>`).join('')}</div>`;
+  }else if(k==='tc'){
+    body+=`<p class="note">${t('tcb')}</p>`+demo(j=>st.cap===j?'on':'',j=>droneSVG(TCOL[j],'#7fe9ff',false)+(st.cap===j?'<b class="tcapb">★</b>':''))
+      +`<div class="out">${st.cap==null?'':t('tcr',{x:TNAMES[st.cap]})}</div>`;
+  }else if(k==='tl'){
+    body+=`<div class="demo"><div class="d">${droneSVG('#4dffa6','#7fe9ff',true)}<span>${t('me').replace(/[()]/g,'').trim()||'Toi'}</span></div></div>
+      <form class="tlform" id="tlForm"><input class="t" id="tlIn" maxlength="120" placeholder="${esc(t('tlph'))}" value="${esc(st.lw||'')}"><button class="btn cy" type="submit">${t('tlbtn')}</button></form>
+      ${st.sent?`<div class="m last" style="margin-top:10px;padding:8px 10px;border-radius:8px">💬 <b>${t('me').replace(/[()]/g,'').trim()||'Toi'}</b> ${esc(st.sent)}</div><div class="out">${t('tlr')}</div>`:''}`;
+  }else if(k==='tv'){
+    body+=`<div class="demo"><div class="d">${droneSVG('#ff5ec4','#7fe9ff',false)}<span>Virus</span></div></div>
+      <div class="choicebtns"><button class="btn violet" id="tvBtn">${t('tvbtn')}</button></div>
+      <div class="out" style="margin-top:10px">${st.tv?`<b style="color:#ff5ec4">${t('tvr')}</b>`:''}</div>`;
   }else if(k==='t5'){
     body+=`<p class="note">${t('t5b')}</p>`+demo(j=>st.v===j?'on':'',j=>droneSVG(TCOL[j],st.v===j&&j===st.awake?RED:'#7fe9ff',st.v===j&&j!==st.awake))
       +`<div class="out">${st.v==null?'':(st.v===st.awake?`<b style="color:var(--ok)">${t('t5r2',{x:TNAMES[st.v]})}</b>`:t('t5r1',{x:TNAMES[st.v]}))}</div>`;
@@ -1725,6 +1754,7 @@ function renderTuto(){
     if(k==='t1'){st.rev=j;j===st.awake?FX.convert():FX.click();}
     if(k==='t2'){if(j===0)return;st.tg=j;st.res=null;st.msg='';FX.click();}
     if(k==='t5'){if(st.v!=null)return;st.v=j;j===st.awake?FX.win():FX.eject();}
+    if(k==='tc'){st.cap=j;FX.convert();}
     renderTuto();
   });
   el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
@@ -1732,6 +1762,8 @@ function renderTuto(){
     st.res=b.dataset.m;st.msg=t(st.res==='c'?'t2rc':'t2rd',{x:TNAMES[st.tg]});
     st.res==='c'?FX.convert():FX.hack();renderTuto();
   });
+  const tf=$('#tlForm');if(tf)tf.onsubmit=e=>{e.preventDefault();const v=$('#tlIn').value.trim();if(!v)return;st.lw=v;st.sent=v;FX.click();renderTuto();};
+  const tvb=$('#tvBtn');if(tvb)tvb.onclick=()=>{st.tv=true;FX.hack();renderTuto();};
   el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{st.ch=b.dataset.c;st.ch==='a'?FX.convert():FX.boom();renderTuto();});
 }
 
