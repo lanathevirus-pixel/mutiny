@@ -1858,11 +1858,18 @@ const EN=()=>LANG==='en';
 /* micro : essaie le micro choisi, sinon celui par défaut (les identifiants d'appareils changent parfois) */
 async function getMic(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Object.assign(new Error('nomedia'),{name:'NoMedia'});
-  try{return await navigator.mediaDevices.getUserMedia({audio:micConstraints()});}
+  let st;
+  try{st=await navigator.mediaDevices.getUserMedia({audio:micConstraints(true)});}
   catch(e){
-    if(AUD.mic&&e&&e.name!=='NotAllowedError'){AUD.mic='';LS.set('mt_mic','');return await navigator.mediaDevices.getUserMedia({audio:micConstraints()});}
-    throw e;
+    // micro choisi introuvable (débranché, identifiant changé) : on prend celui par défaut, sans oublier le choix
+    if(AUD.mic&&e&&(e.name==='OverconstrainedError'||e.name==='NotFoundError')){
+      st=await navigator.mediaDevices.getUserMedia({audio:micConstraints(false)});
+      toast(LANG==='en'?'🎙️ The chosen microphone is not available: using the default one.':'🎙️ Le micro choisi n’est pas disponible : micro par défaut utilisé.');
+    }else throw e;
   }
+  const tr=st.getAudioTracks()[0];
+  console.log('[micro]',tr&&tr.label,tr&&tr.getSettings&&tr.getSettings().deviceId);
+  return st;
 }
 function micError(e){
   const n=e&&e.name,EN=LANG==='en';
@@ -1873,7 +1880,7 @@ function micError(e){
     :t('micUnavailable');
   toast(msg);reportErr('micro: '+(n||e),'voice');
 }
-function micConstraints(){const c={echoCancellation:true,noiseSuppression:true,autoGainControl:true};if(AUD.mic)c.deviceId={ideal:AUD.mic};return c;}
+function micConstraints(useChoice){const c={echoCancellation:true,noiseSuppression:true,autoGainControl:true};if(useChoice!==false&&AUD.mic)c.deviceId={exact:AUD.mic};return c;}
 const canSink=typeof HTMLMediaElement!=='undefined'&&'setSinkId' in HTMLMediaElement.prototype;
 function applySink(el){if(canSink&&el&&AUD.out)el.setSinkId(AUD.out).catch(()=>{});}
 async function setMic(id){
@@ -1884,7 +1891,7 @@ async function setMic(id){
     if(V.stream)V.stream.getTracks().forEach(t=>t.stop());
     V.stream=ns;V.track=ns.getAudioTracks()[0];addAnalyser(ME,ns);
     Object.values(V.pcs).forEach(o=>{o.cur=undefined});Object.keys(V.pcs).forEach(applyTrack);
-    toast(EN()?'Microphone changed':'Micro changé');
+    toast((EN()?'🎙️ Microphone: ':'🎙️ Micro : ')+(V.track&&V.track.label||'?'));
   }catch(e){micError(e);}
   renderVoiceBar();
 }
