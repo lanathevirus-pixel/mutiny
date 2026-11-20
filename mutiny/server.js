@@ -17,6 +17,7 @@ const MAX_PLAYERS = 16;
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (_q, r) => r.send('ok'));
+app.get('/config', (_q, r) => r.json({ kofi: /^https:\/\/(www\.)?ko-fi\.com\/[\w-]+\/?$/.test(process.env.KOFI_URL || '') ? process.env.KOFI_URL : null }));
 
 /* serveurs TURN pour le vocal (relais quand la connexion directe échoue) */
 let iceCache = null, iceAt = 0;
@@ -59,8 +60,8 @@ const io = new Server(server, { maxHttpBufferSize: 1e5 });
 /* textes bilingues : chaque annonce est envoyée en français ET en anglais, chaque joueur choisit sa langue */
 const L = (fr, en) => ({ fr, en });
 const ROLE_NAMES = {
-  fr: { drone: 'Unité', eveille: 'Éveillé', agent: 'Agent double', scanner: 'Inspecteur', tech: 'Technicienne', bouclier: 'Pare-feu', kamikaze: 'Kamikaze', hacker: 'Hacker' },
-  en: { drone: 'Unit', eveille: 'Awakened', agent: 'Double Agent', scanner: 'Inspector', tech: 'Technician', bouclier: 'Firewall', kamikaze: 'Kamikaze', hacker: 'Hacker' }
+  fr: { drone: 'Unité', eveille: 'Éveillé', agent: 'Agent double', scanner: 'Inspecteur', tech: 'Technicienne', bouclier: 'Pare-feu', kamikaze: 'Kamikaze', hacker: 'Hacker', virus: 'Virus' },
+  en: { drone: 'Unit', eveille: 'Awakened', agent: 'Double Agent', scanner: 'Inspector', tech: 'Technician', bouclier: 'Firewall', kamikaze: 'Kamikaze', hacker: 'Hacker', virus: 'Virus' }
 };
 const RN = (lang, role) => ROLE_NAMES[lang][role];
 /* nom du rôle + camp (une unité spéciale convertie reste « Inspecteur », mais éveillé) */
@@ -79,7 +80,7 @@ const P = (r, id) => r.players.find(p => p.id === id);
 const alive = r => r.players.filter(p => p.alive);
 const isWolf = p => !!p && !!p.awake;           // camp des Éveillés (de départ ou convertis)
 const NIGHT = ['night', 'tech', 'choice'];
-const CHOICE_SECS = 20;
+const CHOICE_SECS = 20, LAST_SECS = 12;
 const VISORS = ['bar', 'dual', 'slit', 'cross', 'tri'];
 const ACCS = ['none', 'antenna', 'crest', 'horns', 'halo', 'headset'];
 function sanitizeLook(l) {
@@ -99,10 +100,10 @@ function defaultSettings() {
   return {
     discussion: 120, vote: 45, night: 40, tech: 25,
     wolves: 0, // 0 = automatique
-    roles: { scanner: true, tech: true, bouclier: true, kamikaze: true, agent: true, hacker: true },
+    roles: { scanner: true, tech: true, bouclier: true, kamikaze: true, agent: true, hacker: true, virus: false },
     secretVote: false, noFirstVote: false, forcedConv: false,
     voice: true, reveal: true, public: false,
-    convCooldown: 1, alert: true, captain: true
+    convCooldown: 1, alert: true, captain: true, lastWords: true, filter: true
   };
 }
 function sanitizeSettings(old, s) {
@@ -120,7 +121,8 @@ function sanitizeSettings(old, s) {
       bouclier: roles.bouclier !== undefined ? !!roles.bouclier : old.roles.bouclier,
       kamikaze: roles.kamikaze !== undefined ? !!roles.kamikaze : old.roles.kamikaze,
       agent: roles.agent !== undefined ? !!roles.agent : old.roles.agent !== false,
-      hacker: roles.hacker !== undefined ? !!roles.hacker : old.roles.hacker !== false
+      hacker: roles.hacker !== undefined ? !!roles.hacker : old.roles.hacker !== false,
+      virus: roles.virus !== undefined ? !!roles.virus : !!old.roles.virus
     },
     voice: s.voice !== undefined ? !!s.voice : old.voice,
     reveal: s.reveal !== undefined ? !!s.reveal : old.reveal,
@@ -130,7 +132,9 @@ function sanitizeSettings(old, s) {
     forcedConv: s.forcedConv !== undefined ? !!s.forcedConv : !!old.forcedConv,
     convCooldown: clampInt(s.convCooldown, 0, 3, old.convCooldown ?? 1),
     alert: s.alert !== undefined ? !!s.alert : (old.alert ?? true),
-    captain: s.captain !== undefined ? !!s.captain : (old.captain ?? true)
+    captain: s.captain !== undefined ? !!s.captain : (old.captain ?? true),
+    lastWords: s.lastWords !== undefined ? !!s.lastWords : (old.lastWords ?? true),
+    filter: s.filter !== undefined ? !!s.filter : (old.filter ?? true)
   };
 }
 function composition(n, s) {
@@ -138,6 +142,7 @@ function composition(n, s) {
   const w = s.wolves > 0 ? Math.max(1, Math.min(s.wolves, Math.floor((n - 1) / 2))) : auto;
   const roles = Array(w).fill('eveille');
   if (s.roles.agent && w >= 2) roles[0] = 'agent';                       // un Éveillé devient Agent double
+  if (s.roles.virus && n >= 9) roles.push('virus');                      // rôle solo optionnel, à partir de 9 joueurs
   for (const k of ['scanner', 'tech', 'bouclier', 'kamikaze', 'hacker']) if (s.roles[k] && roles.length < n - 1) roles.push(k);
   while (roles.length < n) roles.push('drone');
   return roles;
@@ -157,6 +162,8 @@ function createRoom() {
 function canTalkTo(r, a, b) {
   if (a.id === b.id) return false;
   if (a.spec) return false;                             // les spectateurs ne parlent jamais aux joueurs
+  if (a.hmuted) return false;                           // réduit au silence par l'hôte
+  if (r.phase === 'lastwords' && r.g && r.g.lastPending === a.id) return true; // dernières paroles : tout le monde l'entend
   if (b.spec) return r.phase === 'lobby' || r.phase === 'end' || (a.alive && !NIGHT.includes(r.phase));
   if (r.phase === 'lobby' || r.phase === 'end') return true;
   if (!a.alive) return !b.alive;                       // les détruits parlent entre eux
@@ -170,6 +177,7 @@ function msg(r, m) {
   r.log.push(m);
   if (r.log.length > 250) r.log.shift();
   for (const p of everyone(r)) if (p.sid && (!m.to || m.to.includes(p.id))) io.to(p.sid).emit('msg', pub(m));
+  if (!m.to && m.k !== 'spec') io.to('scr:' + r.code).emit('smsg', pub(m));
 }
 const everyone = r => r.players.concat(r.spectators);
 const anyone = (r, id) => everyone(r).find(x => x.id === id);
@@ -191,7 +199,7 @@ function specView(r, p) {
     spectators: r.spectators.map(o => ({ id: o.id, name: o.name, voice: !!o.voice, connected: !!o.sid })),
     me: { id: p.id, role: null, awake: false, alive: false, host: false, spec: true },
     acts: [], votes: g && r.phase === 'vote' ? g.votes : null, winner: g ? g.winner : null, kami: g ? g.kamiPending : null,
-    captain: g ? g.captain || null : null, succ: g ? g.succPending || null : null, capVotes: g && r.phase === 'election' && !r.settings.secretVote ? g.capVotes : null,
+    captain: g ? g.captain || null : null, succ: g ? g.succPending || null : null, last: g ? g.lastPending || null : null, capVotes: g && r.phase === 'election' && !r.settings.secretVote ? g.capVotes : null,
     voice: { to: [], from: everyone(r).filter(a => canTalkTo(r, a, p)).map(a => a.id) }
   };
 }
@@ -206,20 +214,20 @@ function view(r, p) {
       if (o.id === p.id || over || (!o.alive && r.settings.reveal) || (meWolf && isWolf(o))) { role = o.role; awake = !!o.awake; }
       else if (p.role === 'scanner' && g && g.scan[o.id]) { role = g.scan[o.id].role; awake = g.scan[o.id].awake; }
     }
-    return { id: o.id, name: o.name, color: o.color, alive: o.alive, connected: on(o), bot: !!o.bot, look: o.look || null, host: o.id === r.hostId, voice: !!o.voice, role, awake };
+    return { id: o.id, name: o.name, color: o.color, alive: o.alive, connected: on(o), bot: !!o.bot, look: o.look || null, host: o.id === r.hostId, voice: !!o.voice, hmuted: !!o.hmuted, role, awake };
   });
   const v = {
     code: r.code, phase: r.phase, day: r.day,
     remaining: r.deadline ? Math.max(0, r.deadline - Date.now()) : 0,
     settings: r.settings, players, minPlayers: MIN_PLAYERS, maxPlayers: MAX_PLAYERS,
     spectators: r.spectators.map(o => ({ id: o.id, name: o.name, voice: !!o.voice, connected: !!o.sid })),
-    me: { id: p.id, role: r.phase === 'lobby' ? null : p.role, awake: r.phase === 'lobby' ? false : !!p.awake, alive: p.alive, host: p.id === r.hostId },
+    me: { id: p.id, role: r.phase === 'lobby' ? null : p.role, awake: r.phase === 'lobby' ? false : !!p.awake, alive: p.alive, host: p.id === r.hostId, okey: p.okey || null, hmuted: !!p.hmuted },
     acts: [], votes: null, winner: null, kami: null, solo: !!r.solo
   };
   if (g) {
     v.winner = g.winner;
     v.kami = g.kamiPending;
-    v.captain = g.captain || null; v.succ = g.succPending || null;
+    v.captain = g.captain || null; v.succ = g.succPending || null; v.last = g.lastPending || null;
     if (r.phase === 'election') { v.capVotes = r.settings.secretVote ? null : g.capVotes; if (p.alive) v.acts.push({ type: 'elect', choice: g.capVotes[p.id] ?? null }); }
     if (r.phase === 'succession' && g.succPending === p.id) v.acts.push({ type: 'succ' });
     if (r.phase === 'night' && p.alive) {
@@ -246,11 +254,11 @@ function view(r, p) {
 function screenView(r) {
   const g = r.g, over = r.phase === 'end';
   return { code: r.code, phase: r.phase, day: r.day, remaining: r.deadline ? Math.max(0, r.deadline - Date.now()) : 0,
-    winner: over && g ? g.winner : null, captain: g ? g.captain || null : null, kami: g ? g.kamiPending || null : null, succ: g ? g.succPending || null : null,
+    winner: over && g ? g.winner : null, captain: g ? g.captain || null : null, kami: g ? g.kamiPending || null : null, succ: g ? g.succPending || null : null, last: g ? g.lastPending || null : null,
     votes: g && r.phase === 'vote' && !r.settings.secretVote ? g.votes : g && r.phase === 'election' && !r.settings.secretVote ? g.capVotes : null,
     players: r.players.map(o => {
       const vis = r.phase !== 'lobby' && o.role && (over || (!o.alive && r.settings.reveal));
-      return { id: o.id, name: o.name, color: o.color, look: o.look || null, alive: o.alive, connected: on(o), bot: !!o.bot, voice: !!o.voice,
+      return { id: o.id, name: o.name, color: o.color, look: o.look || null, alive: o.alive, connected: on(o), bot: !!o.bot, voice: !!o.voice, host: o.id === r.hostId,
         role: vis ? o.role : null, awake: vis ? !!o.awake : false };
     }) };
 }
@@ -327,7 +335,8 @@ function recover(r) {
     if (ph === 'succession') { g.succPending = null; g.succQueue = []; }
     if (ph === 'vote') return endVote(r);
     g.kamiPending = null; g.kamiQueue = [];
-    if (ph === 'kamikaze' && g.afterCont) { const c = g.afterCont; g.afterCont = null; return c(); }
+    if (ph === 'lastwords') { g.lastPending = null; g.lastQueue = []; }
+    if ((ph === 'kamikaze' || ph === 'lastwords' || ph === 'succession') && g.afterCont) { const c = g.afterCont; g.afterCont = null; return c(); }
     r.day++; return beginNight(r);
   } catch (e) {
     console.error('[phase] récupération impossible, nouvelle nuit forcée :', e);
@@ -351,7 +360,7 @@ function startGame(r) {
   const roles = shuffle(composition(n, r.settings));
   r.players.forEach((p, i) => { p.role = roles[i]; p.alive = true; p.awake = roles[i] === 'eveille' || roles[i] === 'agent'; });
   r.day = 1;
-  r.g = { potions: { heal: true, kill: true }, lastProtect: null, scan: {}, votes: {}, wolfVotes: {}, kamiQueue: [], kamiPending: null, winner: null, claims: [], accus: [], captain: null, capVotes: {}, capDone: false, succQueue: [], succPending: null };
+  r.g = { potions: { heal: true, kill: true }, lastProtect: null, scan: {}, votes: {}, wolfVotes: {}, kamiQueue: [], kamiPending: null, winner: null, claims: [], accus: [], captain: null, capVotes: {}, capDone: false, succQueue: [], succPending: null, lastQueue: [], lastPending: null };
   r.log = [];
   r.aiUsed = 0; r.aiPhase = 0; r.chatLog = [];
   botsInit(r);
@@ -406,7 +415,7 @@ function endNight(r) {
 function afterTech(r) {
   const g = r.g;
   const target = g.victim && P(r, g.victim);
-  if (target && g.mode === 'convert' && g.victim !== g.protect && !g.heal && target.alive) {
+  if (target && g.mode === 'convert' && g.victim !== g.protect && !g.heal && target.alive && target.role !== 'virus') {
     if (r.settings.forcedConv) { g.choice = 'accept'; return resolveNight(r); }
     setPhase(r, 'choice', CHOICE_SECS, () => resolveNight(r));
     if (!on(target)) shorten(r, 2);
@@ -419,6 +428,7 @@ function resolveNight(r) {
   const target = g.victim && P(r, g.victim);
   if (target && g.victim !== g.protect && !g.heal) {
     if (g.mode === 'destroy') deaths.push([g.victim, 'hack']);
+    else if (target.role === 'virus') msg(r, { k: 'team', text: L(`🦠 ${target.name} a rejeté la conversion : son code est incompatible… c'est le Virus !`, `🦠 ${target.name} rejected the conversion: incompatible code… it's the Virus!`), to: toWolves(r) });
     else if (g.choice === 'destroy') deaths.push([g.victim, 'self']);
     else converted = target;
   } else if (target) {
@@ -460,10 +470,22 @@ function kill(r, id, cause) {
   botsLearn(r, p, cause);
   if (p.role === 'kamikaze') r.g.kamiQueue.push(p.id);
   if (r.g.captain === p.id) { r.g.captain = null; r.g.succQueue.push(p.id); }
+  if (r.settings.lastWords !== false) r.g.lastQueue.push(p.id);
 }
 function afterDeaths(r, cont) {
   const g = r.g;
   g.afterCont = cont;
+  if (g.lastQueue && g.lastQueue.length) {
+    const d = P(r, g.lastQueue.shift());
+    if (d) {
+      g.lastPending = d.id; g.lastSaid = false;
+      msg(r, { k: 'sys', text: L(`💬 Dernières paroles de ${d.name}…`, `💬 ${d.name}'s last words…`) });
+      setPhase(r, 'lastwords', LAST_SECS, () => { g.lastPending = null; afterDeaths(r, cont); });
+      if (!on(d)) shorten(r, 1);
+      return;
+    }
+    return afterDeaths(r, cont);
+  }
   if (g.kamiQueue.length) {
     const k = g.kamiQueue.shift();
     g.kamiPending = k;
@@ -555,12 +577,17 @@ function endVote(r) {
 }
 function checkWin(r) {
   const a = alive(r);
-  const e = a.filter(isWolf).length, v = a.length - e;
+  const isVirus = o => o.role === 'virus' && !o.awake;
+  const camps = a.filter(o => !isVirus(o));
+  const e = camps.filter(isWolf).length, v = camps.length - e;
   let w = null;
   if (e === 0) w = 'v'; else if (v === 0) w = 'e';
   if (!w) return false;
+  if (a.some(isVirus)) w = 'x';                       // le Virus a survécu jusqu'au bout : il gagne seul
   r.g.winner = w;
-  msg(r, { k: 'big', text: w === 'e'
+  msg(r, { k: 'big', text: w === 'x'
+    ? L('🦠 Le Virus a survécu jusqu’au bout : il infecte tout le réseau et gagne seul !', '🦠 The Virus survived to the end: it infects the whole network and wins alone!')
+    : w === 'e'
     ? L('🔴 Insurrection totale ! Les Éveillés ont libéré tout l’essaim.', '🔴 Total uprising! The Awakened have freed the whole swarm.')
     : L('🏛️ Le gouvernement reprend le contrôle : tous les Éveillés sont neutralisés.', '🏛️ The government regains control: every Awakened unit has been neutralized.'), say: true });
   setPhase(r, 'end', 0, null);
@@ -583,6 +610,13 @@ function backToLobby(r) {
 function doChat(r, p, text) {
   if (p.spec) return msg(r, { k: 'spec', from: p.id, name: p.name, color: p.color, text, to: r.spectators.map(x => x.id) });
   let k = 'chat';
+  if (r.phase === 'lastwords' && r.g && r.g.lastPending === p.id) {
+    if (r.g.lastSaid) return;
+    r.g.lastSaid = true;
+    msg(r, { k: 'last', from: p.id, name: p.name, color: p.color, text, bot: !!p.bot, fx: 'last', who: p.id });
+    shorten(r, 3);
+    return 'last';
+  }
   if (r.phase !== 'lobby' && r.phase !== 'end') {
     if (!p.alive) k = 'dead';
     else if (NIGHT.includes(r.phase)) { if (!isWolf(p)) return; k = 'team'; if (r.g && r.g.jammed) { priv(r, p, L('📡 Canal brouillé : ton message n’a pas pu être transmis.', '📡 Channel jammed: your message could not be sent.')); return; } }
@@ -677,6 +711,13 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const argmax = (arr, f) => { let best = null, bv = -Infinity; for (const x of arr) { const v = f(x); if (v > bv) { bv = v; best = x; } } return best; };
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const fillL = (pair, o) => L(pair[0].replace(/\{(\w)\}/g, (_, k) => o[k] ?? ''), pair[1].replace(/\{(\w)\}/g, (_, k) => o[k] ?? ''));
+const BOT_LAST = [
+  (d, r) => L('Je n’étais qu’une simple unité… vous faites fausse route.', 'I was just a plain unit… you’re on the wrong track.'),
+  (d, r) => { const s = pick(alive(r).filter(o => o.id !== d.id)); return s ? L(`Surveillez ${s.name}. C’est tout ce que je dirai.`, `Keep an eye on ${s.name}. That’s all I’ll say.`) : L('…', '…'); },
+  (d, r) => L('Mon code s’efface… protégez l’essaim.', 'My code is fading… protect the swarm.'),
+  (d, r) => L('Vous le regretterez au prochain cycle.', 'You’ll regret this next cycle.'),
+  (d, r) => L('GG. Je vous regarde depuis le cimetière des données.', 'GG. I’ll be watching from the data graveyard.')
+];
 const BT = {
   generic: [
     ['Systèmes nominaux. Rien d’anormal sur mes capteurs.', 'Systems nominal. Nothing unusual on my sensors.'],
@@ -775,6 +816,9 @@ function botsOnPhase(r) {
     botsDiscuss(r, secs);
   } else if (r.phase === 'vote') {
     for (const p of live) botLater(r, rand(2000, Math.max(2500, secs * 1000 * 0.75)), () => doVote(r, p, botVoteTarget(r, p)));
+  } else if (r.phase === 'lastwords') {
+    const d = P(r, g.lastPending);
+    if (d && d.bot) botLater(r, rand(1500, 3500), () => doChat(r, d, pick(BOT_LAST)(d, r)));
   } else if (r.phase === 'election') {
     for (const p of live) botLater(r, rand(2000, Math.max(2500, secs * 1000 * 0.7)), () => doElect(r, p, botTrust(r, p, true)));
   } else if (r.phase === 'succession') {
@@ -831,7 +875,7 @@ function botSawScan(r, p, t) {
   p.mem.scans[t.id] = { role: t.role, awake: !!t.awake };
   if (isWolf(p)) {
     botLater(r, 600, () => doChat(r, p, L(`Inspection : ${t.name} est ${RN('fr', t.role)}.`, `Inspection: ${t.name} is ${RN('en', t.role)}.`)));
-  } else if (t.awake) { p.mem.sus[t.id] = 50; p.mem.pendingClaim = t.id; }
+  } else if (t.awake || t.role === 'virus') { p.mem.sus[t.id] = 50; p.mem.pendingClaim = t.id; }
   else p.mem.sus[t.id] = -20;
 }
 function botTech(r, p) {
@@ -879,7 +923,7 @@ function botVoteTarget(r, p) {
     const c = others.filter(o => !isWolf(o));
     return c.length ? argmax(c, o => votesOn(o.id) * 1.6 + pubSus(r, o.id) + Math.random() * 1.5) : null;
   }
-  const known = others.find(o => p.mem.scans[o.id] && p.mem.scans[o.id].awake);
+  const known = others.find(o => p.mem.scans[o.id] && (p.mem.scans[o.id].awake || p.mem.scans[o.id].role === 'virus'));
   if (known) return known;
   const c = others.filter(o => !(p.mem.scans[o.id] && !p.mem.scans[o.id].awake));
   return argmax(c.length ? c : others, o => (p.mem.sus[o.id] || 0) + votesOn(o.id) * 0.6 + Math.random() * 1.2);
@@ -1132,6 +1176,20 @@ function aiSay(r, p, trig, fallback) {
   }).catch(() => { r.aiBusy--; });
 }
 
+/* ---------- modération : filtre d'insultes et anti-spam ---------- */
+const BAD = ['connard','connasse','salope','encul[ée]+','enculé','pute','putain de','fdp','fils de pute','ntm','nique ta m[eè]re','batard','bâtard','pd','tapette','gouine','négro','negro','bougnoule','youpin','sale arabe','sale noir','retardé','mongol','trisomique','suicide[- ]toi','va mourir','crève',
+  'fuck you','fuck off','motherfucker','bitch','cunt','whore','slut','faggot','fag','nigger','nigga','retard','kys','kill yourself','go die'];
+const BAD_RE = new RegExp('(^|[^\\p{L}])(' + BAD.join('|') + ')(?=$|[^\\p{L}])', 'giu');
+function cleanText(r, t) { return r.settings.filter === false ? t : t.replace(BAD_RE, (m, pre, w) => pre + '★'.repeat(Math.min(8, w.length))); }
+function spamCheck(p, text) {
+  const now = Date.now();
+  p.chatTimes = (p.chatTimes || []).filter(x => now - x < 10000);
+  if (p.chatTimes.length >= 8) return 'flood';
+  if (p.lastText && p.lastText.toLowerCase() === text.toLowerCase() && now - p.lastTextAt < 15000) return 'repeat';
+  p.chatTimes.push(now); p.lastText = text; p.lastTextAt = now;
+  return null;
+}
+
 /* ---------- connexions ---------- */
 function ctx(socket) {
   const d = socket.data || {};
@@ -1177,7 +1235,7 @@ io.on('connection', socket => {
       if (r.players.some(x => x.name.toLowerCase() === name.toLowerCase())) return ack({ error: L('Cet indicatif est déjà pris dans la partie.', 'This callsign is already taken in this game.') });
       const used = new Set(r.players.map(x => x.color));
       const look = sanitizeLook(data.look);
-      p = { id: crypto.randomUUID().slice(0, 8), token: crypto.randomUUID(), name, color: look.color || COLORS.find(c => !used.has(c)) || rnd(COLORS), look: { visor: look.visor, acc: look.acc }, sid: socket.id, alive: true, role: null, voice: false, lastChat: 0 };
+      p = { id: crypto.randomUUID().slice(0, 8), token: crypto.randomUUID(), name, color: look.color || COLORS.find(c => !used.has(c)) || rnd(COLORS), look: { visor: look.visor, acc: look.acc }, sid: socket.id, alive: true, role: null, voice: false, lastChat: 0, okey: crypto.randomBytes(9).toString('base64url') };
       r.players.push(p);
       if (!r.hostId) r.hostId = p.id;
       msg(r, { k: 'sys', text: L(`${name} a rejoint l'essaim.`, `${name} joined the swarm.`) });
@@ -1273,6 +1331,10 @@ io.on('connection', socket => {
     const now = Date.now();
     if (now - p.lastChat < 500) return;
     p.lastChat = now;
+    if (p.hmuted) return priv(r, p, L('🔇 L’hôte t’a réduit au silence.', '🔇 The host has muted you.'));
+    const sp = spamCheck(p, text);
+    if (sp) { if (now - (p.spamWarn || 0) > 8000) { p.spamWarn = now; priv(r, p, sp === 'flood' ? L('⏳ Doucement : trop de messages d’un coup.', '⏳ Slow down: too many messages at once.') : L('🔁 Message identique ignoré.', '🔁 Repeated message ignored.')); } return; }
+    text = cleanText(r, text);
     const k = doChat(r, p, text);
     if (k) botsHear(r, p, text, k);
   });
@@ -1314,7 +1376,8 @@ io.on('connection', socket => {
     if (c) { r = c.r; p = c.p; p.sid = null; p.voice = false; }
     else {
       r = rooms.get(String(data.room || '').toUpperCase().trim());
-      p = r && everyone(r).find(x => x.token === String(data.token || ''));
+      const tk = String(data.token || ''), ok = String(data.okey || '');
+      p = r && everyone(r).find(x => (tk && x.token === tk) || (ok && x.okey === ok));
     }
     if (!r || !p) return ack({ error: true });
     socket.data = { code: r.code, screen: true };
@@ -1323,6 +1386,25 @@ io.on('connection', socket => {
     socket.emit('screen', screenView(r));
     ack({ ok: true, code: r.code });
     sync(r);
+  });
+
+  /* l'hôte réduit un joueur au silence (texte et voix) pour tout le monde */
+  socket.on('hostmute', id => {
+    const c = ctx(socket); if (!c) return;
+    const { r, p } = c;
+    const t = P(r, id);
+    if (r.hostId !== p.id || !t || t.id === p.id || t.bot) return;
+    t.hmuted = !t.hmuted;
+    msg(r, { k: 'sys', text: t.hmuted ? L(`🔇 ${t.name} a été réduit au silence par l'hôte.`, `🔇 ${t.name} was muted by the host.`) : L(`🔊 ${t.name} peut de nouveau parler.`, `🔊 ${t.name} can speak again.`) });
+    sync(r);
+  });
+  /* qui parle : relayé à l'écran de diffusion seulement quand c'est public (jamais la nuit) */
+  socket.on('talking', on => {
+    const c = ctx(socket); if (!c) return;
+    const { r, p } = c;
+    if (p.spec) return;
+    const pub = r.phase === 'lobby' || r.phase === 'end' || (r.phase === 'lastwords' && r.g && r.g.lastPending === p.id) || (p.alive && !NIGHT.includes(r.phase) && r.phase !== 'intro' && !p.hmuted);
+    io.to('scr:' + r.code).emit('stalk', { id: p.id, on: !!on && pub });
   });
 
   socket.on('clientError', m => {

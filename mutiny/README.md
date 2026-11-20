@@ -142,4 +142,20 @@ Le log de démarrage indique `[vocal] relais TURN configuré` quand c'est pris e
 Au jour 2, les unités élisent un chef d'équipage (option de l'hôte, activée par défaut). Son vote compte double et départage les égalités. S'il tombe, il désigne son successeur (20 s, sinon tirage au sort).
 
 ## Mode streamer
-Bouton 🎥 en haut à droite pendant une partie : il ouvre une **fenêtre de contrôle séparée** contenant tout le jeu (rôle, plateau, chat, vocal). La fenêtre principale devient un écran de diffusion qui n'affiche que JOUR/NUIT, le numéro du cycle et le minuteur : c'est elle qu'on capture dans OBS (capture de fenêtre). Fermer la fenêtre de contrôle (ou cliquer « Rejouer dans cette fenêtre ») ramène le jeu dans la fenêtre principale. Autoriser les pop-ups pour le site si le navigateur les bloque.
+Bouton 🎥 en haut à droite pendant une partie : il ouvre une **fenêtre de contrôle séparée** contenant tout le jeu (rôle, plateau, chat, vocal). La fenêtre principale devient un écran de diffusion qui n’affiche que les infos publiques : JOUR/NUIT, cycle, minuteur, joueurs (vivants/détruits, chef, votes publics, rôles révélés) : c'est elle qu'on capture dans OBS (capture de fenêtre). Fermer la fenêtre de contrôle (ou cliquer « Rejouer dans cette fenêtre ») ramène le jeu dans la fenêtre principale. Autoriser les pop-ups pour le site si le navigateur les bloque.
+
+## Dernières paroles
+Chaque unité éliminée a 12 s pour un dernier message public (texte ou voix). Option de l'hôte « 💬 Dernières paroles ».
+
+## Virus (rôle optionnel, 9+ joueurs)
+N'appartient à aucun camp. S'il est encore en vie quand un camp gagne, c'est lui qui gagne seul. Impossible à convertir : la tentative échoue et le révèle aux Éveillés. Désactivé par défaut (rôle chaotique) : l'hôte l'active dans les rôles.
+
+## Overlay OBS
+Bouton « OBS » dans le jeu : copie une adresse à coller dans une **Source navigateur** OBS (fond transparent, 1280×720 ou 1920×1080). Elle n'affiche que les infos publiques : joueurs, jour/nuit, minuteur, qui parle (le jour), éliminations animées et chat public. Ajouter `&chat=0` à la fin de l'adresse pour masquer le chat. L'adresse est propre au joueur et à la partie (lecture seule).
+
+## Modération
+- Bouton 🛡️ : couper la voix et/ou le chat d'un joueur juste pour soi ; l'hôte peut aussi réduire un joueur au silence pour tout le monde.
+- Anti-spam automatique (8 messages / 10 s, messages répétés ignorés) et filtre d'insultes FR/EN (option de l'hôte « 🧼 Filtre anti-insultes »).
+
+## Bouton de soutien Ko-fi
+Ajouter la variable `KOFI_URL` sur Render (ex. `https://ko-fi.com/tonpseudo`) : un bouton « ☕ Soutenir MUTINY » apparaît sur l'accueil.
