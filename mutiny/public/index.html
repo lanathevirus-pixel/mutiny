@@ -168,9 +168,28 @@ html.nochat .scrchat{display:none}html.nochat .scrboard{width:min(96vw,94vh)}
 html.overlay,html.overlay body{background:transparent!important}
 html.overlay body::before,html.overlay body::after{display:none}
 html.overlay .scr-back{display:none}
-html.overlay .scrc,html.overlay .seat .nm{text-shadow:0 1px 4px #000,0 0 10px #000}
-html.overlay .scrchat .m{background:rgba(5,9,22,.78)}
-html.overlay .ring,html.overlay .sweep{opacity:.5}
+/* overlay OBS : tout sur des plaques sombres, lisible sur n'importe quel fond */
+html.overlay .scr{zoom:var(--ovs,1)}
+html.overlay .ring,html.overlay .sweep{display:none}
+html.overlay .scrc{inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:min(48%,440px);background:rgba(6,10,24,.86);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:16px 18px;box-shadow:0 10px 40px rgba(0,0,0,.6);gap:6px}
+html.overlay .scr-brand{opacity:.7;color:#cfd8f0}
+html.overlay .scr-ico svg{width:min(8vh,64px);height:min(8vh,64px)}
+html.overlay .scr-ph{font-size:clamp(22px,5.2vh,50px);text-shadow:0 0 18px currentColor}
+html.overlay .scr-sub{color:#fff;opacity:1}
+html.overlay .scr-t{color:#fff;font-size:clamp(20px,4.6vh,46px)}
+html.overlay .scr-pr{color:#9ff3ff;font-weight:700}
+html.overlay .seat{width:clamp(80px,12.5%,128px);background:rgba(6,10,24,.86);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:7px 6px 6px;box-shadow:0 6px 22px rgba(0,0,0,.55)}
+html.overlay .seat .ava{border-width:3px;background:radial-gradient(circle,rgba(255,255,255,.1),rgba(0,0,0,.5))}
+html.overlay .seat .nm{color:#fff;font:700 clamp(12px,2vh,18px) Rajdhani,sans-serif;margin-top:4px;text-shadow:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.overlay .seat .rt{font-size:clamp(9px,1.4vh,12px);background:rgba(0,0,0,.6)!important}
+html.overlay .seat.dead{opacity:.7}
+html.overlay .seat.talking{border-color:var(--ok);box-shadow:0 0 0 3px rgba(77,255,166,.45),0 0 28px rgba(77,255,166,.6)}
+html.overlay .scrchat{gap:5px;font-size:clamp(13px,2.1vh,19px)}
+html.overlay .scrchat .m{background:rgba(6,10,24,.9)!important;color:#eef3ff!important;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px 11px;opacity:1!important;font-style:normal;text-align:left;font-size:inherit;margin:0;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+html.overlay .scrchat .m.sys,html.overlay .scrchat .m.big{color:#cfe0ff!important;text-align:center;font-family:Rajdhani,sans-serif;letter-spacing:0}
+html.overlay .scrchat .m.death{color:#ffc2cc!important;border-color:rgba(255,59,92,.6)}
+html.overlay .scrchat .m.last{border-left:4px solid var(--gold)}
+html.overlay .scrchat .m .w{font-weight:800}
 .vsel{width:100%;background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:600 14px Rajdhani,sans-serif}
 .vmeter{height:10px;background:#0b1224;border:1px solid var(--line);border-radius:6px;margin-top:8px;overflow:hidden}
 #vtBar{height:100%;width:0;background:#556;transition:width .06s}
@@ -920,6 +939,7 @@ try{if(CTRL)sessionStorage.removeItem('mt_screen');else SCR=sessionStorage.getIt
 const OVL=params.get('overlay')==='1',OKEY=params.get('k')||'';
 if(OVL){SCR=(params.get('room')||'').toUpperCase();document.documentElement.classList.add('overlay');}
 if(params.get('chat')==='0')document.documentElement.classList.add('nochat');
+{const z=parseFloat(params.get('scale'));if(z>=.5&&z<=2)document.documentElement.style.setProperty('--ovs',z);}
 const SLOG=[],SANIM={},STALK=new Set();
 const SX=k=>({
   tip:LANG==='en'?'Streamer mode: play in a separate window, keep only day/night on stream':'Mode streamer : jouer dans une fenêtre séparée, seul jour/nuit reste à l’écran',
@@ -961,7 +981,7 @@ socket.on('screen',v=>{if(!SCR)return;SCRV=v;scrDeadline=Date.now()+(v.remaining
 socket.on('smsg',m=>{
   if(!SCR)return;
   SLOG.push(m);if(SLOG.length>40)SLOG.shift();
-  const box=$('#scrChat');box.appendChild(msgEl(m));while(box.children.length>14)box.removeChild(box.firstChild);
+  const box=$('#scrChat');box.appendChild(msgEl(m));while(box.children.length>(OVL?9:14))box.removeChild(box.firstChild);
   const x=m.fx&&FXMAP[m.fx];
   if(x&&m.who&&x[0]){SANIM[m.who]={cls:x[0],until:Date.now()+1700};renderScreen();setTimeout(renderScreen,1800);}
 });
