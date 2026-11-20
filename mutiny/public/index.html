@@ -601,7 +601,7 @@ fr:{
   vSecret:'🤫 Vote secret',vCaptain:'🎖️ Chef d’équipage (jour 1)',capName:'Chef d’équipage',electTitle:'🎖️ Élection du chef d’équipage',electPrompt:'Clique sur l’unité en qui tu as confiance (toi compris). Son vote comptera double.',electSet:'Ton choix : {x} (clique à nouveau pour retirer)',succTitle:'🎖️ Succession',succTurn:'Tu es tombé : désigne le nouveau chef d’équipage',succWait:'{x} désigne son successeur…',capNote:'🎖️ Chef d’équipage : {x} (vote double)',vNoFirst:'Pas de vote le 1er jour',vForced:'Conversion forcée',
   tabHack:'📡 Hacker',pHackJam:'Une fois par partie : brouille le canal des Éveillés cette nuit.',pHackMask:'Une fois par partie : masque l’alerte d’intrusion cette nuit.',
   hackJamBtn:'📡 Brouiller le canal (1 fois)',hackMaskBtn:'🕶️ Masquer l’alerte (1 fois)',jammedNote:'📡 Canal brouillé : tu ne vois plus les choix des autres Éveillés cette nuit.',
-  profile:'👤 PROFIL',profTitle:'Profil',avatar:'Avatar',pColor:'Couleur',pVisor:'Visière',pAcc:'Accessoire',
+  profile:'👤 PROFIL',profTitle:'Profil',avatar:'Avatar',pColor:'Couleur des lumières',pShell:'Couleur de la coque',sh_graphite:'Graphite',sh_white:'Blanc',sh_black:'Noir mat',sh_chrome:'Chrome',sh_gold:'Or',sh_red:'Rouge',sh_blue:'Bleu',sh_green:'Vert',sh_violet:'Violet',sh_orange:'Orange',sh_pink:'Rose',sh_cyan:'Cyan',sh_navy:'Bleu marine',sh_khaki:'Kaki',sh_bronze:'Bronze',sh_rosegold:'Or rose',sh_copper:'Cuivre',sh_pearl:'Nacre',sh_ice:'Glacier',sh_lime:'Citron vert',sh_magenta:'Magenta',pVisor:'Visière',pAcc:'Accessoire',
   v_bar:'Barre',v_dual:'Double',v_slit:'Fente',v_cross:'Croix',v_tri:'Triple',a_none:'Aucun',a_antenna:'Antenne',a_crest:'Crête',a_horns:'Cornes',a_halo:'Halo',a_headset:'Casque audio',
   stats:'Statistiques',sGames:'Parties jouées',sWins:'Victoires',sWinsE:'Victoires (Éveillés)',sWinsV:'Victoires (Gouvernement)',sConvRate:'Conversions acceptées',sSelf:'Autodestructions',sSurv:'Survies jusqu’à la fin',
   achievements:'Succès',achUnlocked:'🏆 Succès débloqué : {x}',profNote:'Profil, statistiques et succès sont enregistrés dans ce navigateur.',save:'ENREGISTRER',resetStats:'Réinitialiser les stats',
@@ -689,7 +689,7 @@ en:{
   vSecret:'🤫 Secret vote',vCaptain:'🎖️ Captain (day 1)',capName:'Captain',electTitle:'🎖️ Captain election',electPrompt:'Click the unit you trust (yourself included). Their vote will count double.',electSet:'Your choice: {x} (click again to withdraw)',succTitle:'🎖️ Succession',succTurn:'You have fallen: appoint the new captain',succWait:'{x} is appointing a successor…',capNote:'🎖️ Captain: {x} (double vote)',vNoFirst:'No vote on day 1',vForced:'Forced conversion',
   tabHack:'📡 Hacker',pHackJam:'Once per game: jam the Awakened channel tonight.',pHackMask:'Once per game: mask the intrusion alert tonight.',
   hackJamBtn:'📡 Jam the channel (once)',hackMaskBtn:'🕶️ Mask the alert (once)',jammedNote:'📡 Channel jammed: you cannot see the other Awakened’s choices tonight.',
-  profile:'👤 PROFILE',profTitle:'Profile',avatar:'Avatar',pColor:'Color',pVisor:'Visor',pAcc:'Accessory',
+  profile:'👤 PROFILE',profTitle:'Profile',avatar:'Avatar',pColor:'Light color',pShell:'Shell color',sh_graphite:'Graphite',sh_white:'White',sh_black:'Matte black',sh_chrome:'Chrome',sh_gold:'Gold',sh_red:'Red',sh_blue:'Blue',sh_green:'Green',sh_violet:'Violet',sh_orange:'Orange',sh_pink:'Pink',sh_cyan:'Cyan',sh_navy:'Navy',sh_khaki:'Khaki',sh_bronze:'Bronze',sh_rosegold:'Rose gold',sh_copper:'Copper',sh_pearl:'Pearl',sh_ice:'Ice',sh_lime:'Lime',sh_magenta:'Magenta',pVisor:'Visor',pAcc:'Accessory',
   v_bar:'Bar',v_dual:'Dual',v_slit:'Slit',v_cross:'Cross',v_tri:'Triple',a_none:'None',a_antenna:'Antenna',a_crest:'Crest',a_horns:'Horns',a_halo:'Halo',a_headset:'Headset',
   stats:'Statistics',sGames:'Games played',sWins:'Wins',sWinsE:'Wins (Awakened)',sWinsV:'Wins (Government)',sConvRate:'Conversions accepted',sSelf:'Self-destructs',sSurv:'Survived to the end',
   achievements:'Achievements',achUnlocked:'🏆 Achievement unlocked: {x}',profNote:'Profile, stats and achievements are saved in this browser.',save:'SAVE',resetStats:'Reset stats',
@@ -755,12 +755,36 @@ const rColor=(k,awake)=>awake?RED:(ROLES[k]||ROLES.drone).color;
 
 /* ---------- avatar androïde (style sérieux : plaques métalliques, visière en fente) ---------- */
 let SVGN=0;
+/* couleur de la coque : [haut, milieu, bas, épaules haut, épaules bas, arêtes, cou, rainures] */
+const SHELLS={graphite:['#4b566e','#1b2130','#0d1119','#2a3142','#11151f','#5d6a86','#1f2533','#3c475d'],
+  white:['#f2f4f8','#b9c0cc','#6e7685','#d5dae3','#8a92a1','#ffffff','#9aa2b1','#c8ced9'],
+  black:['#2c2e33','#131417','#060708','#1b1c20','#0a0a0c','#44474f','#141518','#2a2c31'],
+  chrome:['#e9eef5','#7d8796','#2b313b','#a9b3c1','#3d4450','#ffffff','#5a6372','#9aa4b3'],
+  gold:['#f6d47a','#a9761c','#5a3c08','#c99a3a','#6b4810','#ffe3a0','#7d5714','#b8892e'],
+  red:['#c4384f','#6e1424','#320810','#8d2033','#3f0b15','#e5677b','#4f0f1a','#932638'],
+  blue:['#3f6fd6','#173170','#0a1636','#24479b','#0f2052','#6f97ee','#142a5e','#2c55b0'],
+  green:['#3ea86b','#145233','#082917','#237848','#0d3a22','#6fd39a','#11452a','#2a8a55'],
+  violet:['#8257d6','#3b1f78','#1b0d3b','#5a35a8','#2a1559','#a98aee','#2f1866','#6a43bf'],
+  orange:['#f4aa71','#b3560f','#5e2d08','#ed7c26','#843f0b','#f4ccae','#8e440b','#e26d12'],
+  pink:['#f4afd1','#df2080','#8f1452','#e967a8','#b31966','#fae5f0','#bb1b6b','#e64c99'],
+  cyan:['#70daeb','#178ea1','#0b4750','#29c8e0','#116774','#aae5ee','#126f7d','#1db6cd'],
+  navy:['#3759be','#121e3f','#000000','#253b7e','#070b18','#6780cb','#090f20','#1e3067'],
+  khaki:['#b9b983','#626237','#272716','#969654','#414125','#cdcdac','#484828','#838349'],
+  bronze:['#cc9966','#6b4724','#261a0d','#a87038','#452e17','#d8b897','#4d3319','#916130'],
+  rosegold:['#e6c5bc','#b95d46','#763c2d','#cf9181','#944a38','#f6ecea','#9b4e3b','#c77d6b'],
+  copper:['#dd906e','#883f20','#3e1d0f','#ca5e2f','#5f2c16','#e5b7a4','#673018','#b2522a'],
+  pearl:['#f9fafb','#99a3b8','#647390','#c9ced9','#7b88a3','#ffffff','#818da7','#b7becd'],
+  ice:['#e7f3f9','#64b1d8','#2d87b4','#a5d2e9','#3b9dce','#ffffff','#43a1d0','#8dc6e2'],
+  lime:['#bde87d','#6ea51d','#3a570f','#9adc38','#517915','#d7eeb4','#578217','#8cd025'],
+  magenta:['#e06ce0','#8b1d8b','#3f0d3f','#ce2cce','#611561','#e7a2e7','#691669','#b526b5']};
+const PSHELLS=Object.keys(SHELLS);
 function droneSVG(c,eye,dead,spin=true,look=null){
   const visor=(look&&look.visor)||'bar',accy=(look&&look.acc)||'none';
   const id='g'+(++SVGN);
   const awake=eye===RED&&!dead;
   const glow=dead?null:(awake?RED:c);
-  const shellA=dead?'#2a2e38':'#4b566e',shellB=dead?'#15181f':'#1b2130',edge=dead?'#30343f':'#5d6a86';
+  const SH=SHELLS[(look&&look.shell)]||SHELLS.graphite;
+  const shellA=dead?'#2a2e38':SH[0],shellB=dead?'#15181f':SH[1],edge=dead?'#30343f':SH[5];
   const acc=dead?'#3a3f4b':c;
   const aglow=dead?'':`style="filter:drop-shadow(0 0 3px ${acc})"`;
   const back={antenna:`<path d="M63 12 L71 -3" stroke="${edge}" stroke-width="2.2" stroke-linecap="round"/><circle cx="71.5" cy="-3.5" r="2.6" fill="${acc}" ${aglow}/>`,
@@ -775,14 +799,14 @@ function droneSVG(c,eye,dead,spin=true,look=null){
     tri:`<circle cx="40" cy="39.3" r="1.9" fill="${glow}"/><circle cx="50" cy="39.3" r="1.9" fill="${glow}"/><circle cx="60" cy="39.3" r="1.9" fill="${glow}"/>`}[visor]||'';
   return `<svg viewBox="0 -6 100 106" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="${id}s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shellA}"/><stop offset=".55" stop-color="${shellB}"/><stop offset="1" stop-color="${dead?'#101217':'#0d1119'}"/></linearGradient>
-    <linearGradient id="${id}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${dead?'#1e222b':'#2a3142'}"/><stop offset="1" stop-color="${dead?'#0e1015':'#11151f'}"/></linearGradient>
+    <linearGradient id="${id}s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shellA}"/><stop offset=".55" stop-color="${shellB}"/><stop offset="1" stop-color="${dead?'#101217':SH[2]}"/></linearGradient>
+    <linearGradient id="${id}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${dead?'#1e222b':SH[3]}"/><stop offset="1" stop-color="${dead?'#0e1015':SH[4]}"/></linearGradient>
   </defs>
   <path d="M10 100 L19 83 L38 76 L62 76 L81 83 L90 100 Z" fill="url(#${id}a)" stroke="${edge}" stroke-width="1.2"/>
   <path d="M22 86 L39 80 M78 86 L61 80" stroke="${acc}" stroke-width="2.2" stroke-linecap="round" opacity=".9"/>
   ${back}
-  <path d="M41 60 L59 60 L57 78 L43 78 Z" fill="${dead?'#1a1d24':'#1f2533'}" stroke="${edge}" stroke-width="1"/>
-  <path d="M45 63 L45 77 M50 63 L50 78 M55 63 L55 77" stroke="${dead?'#2b2f39':'#3c475d'}" stroke-width="1.4"/>
+  <path d="M41 60 L59 60 L57 78 L43 78 Z" fill="${dead?'#1a1d24':SH[6]}" stroke="${edge}" stroke-width="1"/>
+  <path d="M45 63 L45 77 M50 63 L50 78 M55 63 L55 77" stroke="${dead?'#2b2f39':SH[7]}" stroke-width="1.4"/>
   <path d="M50 6 L67 11 L74 26 L73 46 L66 61 L50 69 L34 61 L27 46 L26 26 L33 11 Z" fill="url(#${id}s)" stroke="${edge}" stroke-width="1.4" stroke-linejoin="round"/>
   <path d="M29 47 L39 58 M71 47 L61 58" stroke="${dead?'#2c303a':'#6a7894'}" stroke-width=".9" opacity=".7" fill="none"/>
   <path d="M50 7 L50 28 M33.5 12 L38 27 M66.5 12 L62 27" stroke="${acc}" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="${dead?.5:.95}" ${dead?'':`style="filter:drop-shadow(0 0 2px ${acc})"`}/>
@@ -1772,7 +1796,7 @@ function renderTuto(){
    ========================================================= */
 const PCOLORS=['#39e6ff','#ff8a3d','#b388ff','#4dffa6','#ffd84d','#ff6fb5','#5d8bff','#9cff57','#e8f0ff','#3dffd8','#e0a3ff','#ffb27a','#7ad1ff','#c2ff7a','#ff9ecf','#a3b8ff'];
 const PVISORS=['bar','dual','slit','cross','tri'],PACCS=['none','antenna','crest','horns','halo','headset'];
-let LOOK=Object.assign({color:null,visor:'bar',acc:'none'},LS.get('mt_look',{}));
+let LOOK=Object.assign({color:null,visor:'bar',acc:'none',shell:'graphite'},LS.get('mt_look',{}));
 let ST=Object.assign({games:0,wins:0,winsE:0,winsV:0,offered:0,accepted:0,selfd:0,survived:0,soloWins:0,convWins:0,detect:0},LS.get('mt_stats',{}));
 let ACH=LS.get('mt_ach',{});
 const ACHS=[['first','🔌',s=>s.games>=1],['win','🏅',s=>s.wins>=1],['rebel','🔴',s=>s.winsE>=1],['loyal','🏛️',s=>s.winsV>=1],['turn','🔓',s=>s.accepted>=1],['turnwin','⚡',s=>s.convWins>=1],
@@ -1818,6 +1842,7 @@ function renderProfile(){
       <div class="pprev">${droneSVG(col,'#7fe9ff',false,true,PROF)}<div class="pname">${esc($('#hname').value.trim()||'—')}</div></div>
       <div class="popts">
         <label class="f">${t('pColor')}</label><div class="sw">${PCOLORS.map(c=>`<button data-c="${c}" class="${col===c?'on':''}" style="background:${c}"></button>`).join('')}</div>
+        <label class="f">${t('pShell')}</label><div class="sw shells">${PSHELLS.map(k=>`<button data-sh="${k}" class="${(PROF.shell||'graphite')===k?'on':''}" title="${esc(t('sh_'+k))}" aria-label="${esc(t('sh_'+k))}" style="background:linear-gradient(135deg,${SHELLS[k][0]},${SHELLS[k][1]} 60%,${SHELLS[k][2]})"></button>`).join('')}</div>
         <label class="f">${t('pVisor')}</label><div class="opts2">${PVISORS.map(v=>`<button data-v="${v}" class="${PROF.visor===v?'on':''}">${t('v_'+v)}</button>`).join('')}</div>
         <label class="f">${t('pAcc')}</label><div class="opts2">${PACCS.map(a=>`<button data-a="${a}" class="${PROF.acc===a?'on':''}">${t('a_'+a)}</button>`).join('')}</div>
       </div>
@@ -1833,6 +1858,7 @@ function renderProfile(){
   bindTabs(el);
   el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{PROF.color=b.dataset.c;FX.click();renderProfile()});
   el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{PROF.visor=b.dataset.v;FX.click();renderProfile()});
+  el.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>{PROF.shell=b.dataset.sh;FX.click();renderProfile()});
   el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{PROF.acc=b.dataset.a;FX.click();renderProfile()});
   $('#profSave').onclick=()=>{LOOK=Object.assign({},PROF);LS.set('mt_look',LOOK);FX.convert();closeProfile();toast('✓');$('#logoDrone').innerHTML=droneSVG(LOOK.color||RED,RED,false,true,LOOK);};
   $('#profClose').onclick=closeProfile;
