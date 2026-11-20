@@ -116,9 +116,10 @@ const NIGHT = ['night', 'tech', 'choice'];
 const CHOICE_SECS = 20, LAST_SECS = 12;
 const VISORS = ['bar', 'dual', 'slit', 'cross', 'tri'];
 const ACCS = ['none', 'antenna', 'crest', 'horns', 'halo', 'headset'];
+const SHELLS = ['graphite', 'white', 'black', 'chrome', 'gold', 'red', 'blue', 'green', 'violet', 'orange', 'pink', 'cyan', 'navy', 'khaki', 'bronze', 'rosegold', 'copper', 'pearl', 'ice', 'lime', 'magenta'];
 function sanitizeLook(l) {
   l = l || {};
-  return { color: COLORS.includes(l.color) ? l.color : null, visor: VISORS.includes(l.visor) ? l.visor : 'bar', acc: ACCS.includes(l.acc) ? l.acc : 'none' };
+  return { color: COLORS.includes(l.color) ? l.color : null, visor: VISORS.includes(l.visor) ? l.visor : 'bar', acc: ACCS.includes(l.acc) ? l.acc : 'none', shell: SHELLS.includes(l.shell) ? l.shell : 'graphite' };
 }
 /* recharge de conversion : après une conversion réussie la nuit N, prochaine conversion possible la nuit N + recharge + 1 */
 const canConvert = r => !!r.g && r.day > (r.g.convBlockedUntil || 0);
@@ -801,7 +802,7 @@ function addBot(r) {
   const used = new Set(r.players.map(x => x.name.toLowerCase()));
   const name = BOT_NAMES.find(n => !used.has(n.toLowerCase())) || ('Bot-' + Math.floor(rand(100, 999)));
   const colors = new Set(r.players.map(x => x.color));
-  const p = { id: crypto.randomUUID().slice(0, 8), token: null, name, color: COLORS.find(c => !colors.has(c)) || rnd(COLORS), look: { visor: pick(VISORS), acc: Math.random() < 0.5 ? 'none' : pick(ACCS) }, sid: null, bot: true, persona: PERSONAS[Math.floor(Math.random() * PERSONAS.length)], alive: true, role: null, awake: false, voice: false, lastChat: 0, mem: null };
+  const p = { id: crypto.randomUUID().slice(0, 8), token: null, name, color: COLORS.find(c => !colors.has(c)) || rnd(COLORS), look: { visor: pick(VISORS), acc: Math.random() < 0.5 ? 'none' : pick(ACCS), shell: Math.random() < 0.55 ? 'graphite' : pick(SHELLS) }, sid: null, bot: true, persona: PERSONAS[Math.floor(Math.random() * PERSONAS.length)], alive: true, role: null, awake: false, voice: false, lastChat: 0, mem: null };
   r.players.push(p);
   msg(r, { k: 'sys', text: L(`🤖 ${name} (IA) a rejoint l'essaim.`, `🤖 ${name} (AI) joined the swarm.`) });
   if (aiOn() && Math.random() < 0.35) botLater(r, rand(1500, 4000), () => aiSay(r, p, { kind: 'open' }, null));
@@ -1268,7 +1269,7 @@ io.on('connection', socket => {
       if (r.players.some(x => x.name.toLowerCase() === name.toLowerCase())) return ack({ error: L('Cet indicatif est déjà pris dans la partie.', 'This callsign is already taken in this game.') });
       const used = new Set(r.players.map(x => x.color));
       const look = sanitizeLook(data.look);
-      p = { id: crypto.randomUUID().slice(0, 8), token: crypto.randomUUID(), name, color: look.color || COLORS.find(c => !used.has(c)) || rnd(COLORS), look: { visor: look.visor, acc: look.acc }, sid: socket.id, alive: true, role: null, voice: false, lastChat: 0, okey: crypto.randomBytes(9).toString('base64url') };
+      p = { id: crypto.randomUUID().slice(0, 8), token: crypto.randomUUID(), name, color: look.color || COLORS.find(c => !used.has(c)) || rnd(COLORS), look: { visor: look.visor, acc: look.acc, shell: look.shell }, sid: socket.id, alive: true, role: null, voice: false, lastChat: 0, okey: crypto.randomBytes(9).toString('base64url') };
       r.players.push(p);
       if (!r.hostId) r.hostId = p.id;
       msg(r, { k: 'sys', text: L(`${name} a rejoint l'essaim.`, `${name} joined the swarm.`) });
