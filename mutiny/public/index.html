@@ -1062,7 +1062,7 @@ function setVol(k,v){
   VOL[k]=v;LS.set('mt_vol',VOL);
   const c=SND.ctx;
   if(k==='fx'&&SND.master&&c)SND.master.gain.setTargetAtTime(.9*volF('fx'),c.currentTime,.05);
-  if(k==='music'&&SND.mus&&c){SND.mus.g.gain.cancelScheduledValues(c.currentTime);SND.mus.g.gain.setTargetAtTime(.03*volF('music'),c.currentTime,.1);}
+  if(k==='music'&&SND.mus&&c)SND.mus.vol.gain.setTargetAtTime(volF('music'),c.currentTime,.08);   // transition douce, sans couper l'enveloppe
   if(k==='voice')Object.values(V.pcs).forEach(o=>{if(o.audio)o.audio.volume=Math.min(1,volF('voice'))});
 }
 const MT={stream:null,raf:0,ctx:null,el:null};
@@ -1580,20 +1580,21 @@ const FX={
 /* musique d'ambiance générative : nappe filtrée + basse, accord mineur la nuit, majeur le jour */
 function startMusic(){
   const c=actx();if(!c||SND.mus)return;
-  const g=c.createGain();g.gain.value=0;g.connect(c.destination);
+  const vol=c.createGain();vol.gain.value=volF('music');vol.connect(c.destination);   // volume réglable, séparé de l'enveloppe
+  const g=c.createGain();g.gain.value=0;g.connect(vol);
   const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=600;f.Q.value=3;f.connect(g);
   const lfo=c.createOscillator(),lg=c.createGain();lfo.frequency.value=.06;lg.gain.value=300;lfo.connect(lg);lg.connect(f.frequency);lfo.start();
   const oscs=[0,1,2].map(i=>{const o=c.createOscillator();o.type=i===2?'triangle':'sawtooth';o.detune.value=(i-1)*7;o.connect(f);o.start();return o;});
   const sub=c.createOscillator(),sg=c.createGain();sub.type='sine';sg.gain.value=.45;sub.connect(sg);sg.connect(g);sub.start();
   const pulse=c.createOscillator(),pg=c.createGain();pulse.frequency.value=.25;pg.gain.value=.012;pulse.connect(pg);pg.connect(g.gain);pulse.start();
-  SND.mus={g,f,oscs,sub,lfo,pulse};
+  SND.mus={g,vol,f,oscs,sub,lfo,pulse};
   setMood(SND.mood,true);
-  g.gain.linearRampToValueAtTime(.03*volF('music'),c.currentTime+3);
+  g.gain.linearRampToValueAtTime(.03,c.currentTime+3);
 }
 function stopMusic(){
   const m=SND.mus;if(!m)return;SND.mus=null;
   const c=SND.ctx;m.g.gain.cancelScheduledValues(c.currentTime);m.g.gain.setValueAtTime(m.g.gain.value,c.currentTime);m.g.gain.linearRampToValueAtTime(0,c.currentTime+1);
-  setTimeout(()=>{[...m.oscs,m.sub,m.lfo,m.pulse].forEach(o=>{try{o.stop()}catch(e){}});m.g.disconnect();},1200);
+  setTimeout(()=>{[...m.oscs,m.sub,m.lfo,m.pulse].forEach(o=>{try{o.stop()}catch(e){}});m.g.disconnect();m.vol.disconnect();},1200);
 }
 function setMood(mood,now){
   SND.mood=mood;const m=SND.mus;if(!m)return;
