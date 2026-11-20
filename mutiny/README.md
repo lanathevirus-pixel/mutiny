@@ -162,3 +162,6 @@ Ajouter la variable `KOFI_URL` sur Render (ex. `https://ko-fi.com/tonpseudo`) : 
 
 ## Mentions légales
 Lien « Mentions légales » en bas de l'accueil. Variables Render facultatives pour les compléter : `LEGAL_NAME` (nom ou raison sociale), `LEGAL_SIRET`, `LEGAL_ADDRESS`, `LEGAL_CONTACT` (e-mail).
+
+## Aperçu de partage
+Quand on partage le lien (Discord, X, SMS…), il s'affiche avec l'image `public/og-fr.jpg` (ou `og-en.jpg` avec `?lang=en`), le titre et la description du jeu. Un lien d'invitation (`?room=CODE`) affiche « Rejoins ma partie MUTINY (code …) ». Icône d'onglet : `public/favicon.svg`.

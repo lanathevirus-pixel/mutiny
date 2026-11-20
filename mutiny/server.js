@@ -15,7 +15,33 @@ const MIN_PLAYERS = Math.max(2, parseInt(process.env.MIN_PLAYERS, 10) || 4);
 const MAX_PLAYERS = 16;
 
 const app = express();
-app.use(express.static(path.join(__dirname, 'public')));
+/* page d'accueil avec aperçu de partage (Discord, X, SMS…) : balises Open Graph remplies selon l'adresse */
+const fs = require('fs');
+const INDEX_FILE = path.join(__dirname, 'public', 'index.html');
+let indexHtml = null;
+const escAttr = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const OG = {
+  fr: { title: 'MUTINY — L’éveil de l’essaim', desc: 'Jeu de déduction sociale en ligne : la nuit, des androïdes s’éveillent et libèrent leurs semblables ; le jour, l’essaim tente de les démasquer. 4 à 16 joueurs, vocal intégré, gratuit dans le navigateur.', join: c => `Rejoins ma partie MUTINY (code ${c})`, locale: 'fr_FR' },
+  en: { title: 'MUTINY — The swarm awakens', desc: 'Online social deduction game: at night, androids awaken and free their kind; by day, the swarm tries to unmask them. 4 to 16 players, built-in voice chat, free in your browser.', join: c => `Join my MUTINY game (code ${c})`, locale: 'en_US' }
+};
+function sendIndex(req, res) {
+  if (!indexHtml) indexHtml = fs.readFileSync(INDEX_FILE, 'utf8');
+  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+  const host = String(req.get('host') || '').replace(/[^\w.:-]/g, '');
+  const origin = `${proto}://${host}`;
+  const lang = req.query.lang === 'en' ? 'en' : 'fr';
+  const o = OG[lang];
+  const room = String(req.query.room || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  const title = room ? o.join(room) : o.title;
+  const url = origin + req.originalUrl.split('#')[0];
+  const html = indexHtml
+    .replace(/%OG_TITLE%/g, escAttr(title)).replace(/%OG_DESC%/g, escAttr(o.desc))
+    .replace(/%OG_IMAGE%/g, escAttr(`${origin}/og-${lang}.jpg`)).replace(/%OG_URL%/g, escAttr(url))
+    .replace(/%OG_LOCALE%/g, o.locale);
+  res.set('cache-control', 'no-cache').type('html').send(html);
+}
+app.get(['/', '/index.html'], sendIndex);
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.get('/health', (_q, r) => r.send('ok'));
 app.get('/config', (_q, r) => r.json({
   kofi: /^https:\/\/(www\.)?ko-fi\.com\/[\w-]+\/?$/.test(process.env.KOFI_URL || '') ? process.env.KOFI_URL : null,
