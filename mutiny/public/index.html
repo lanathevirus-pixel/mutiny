@@ -164,6 +164,10 @@ html.overlay .scr-back{display:none}
 html.overlay .scrc,html.overlay .seat .nm{text-shadow:0 1px 4px #000,0 0 10px #000}
 html.overlay .scrchat .m{background:rgba(5,9,22,.78)}
 html.overlay .ring,html.overlay .sweep{opacity:.5}
+.vrow{padding:10px 0;border-bottom:1px solid var(--line)}
+.vlab{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:6px}
+.vsw{font-weight:500;font-size:.9em;opacity:.85;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+.vsl{display:flex;align-items:center;gap:10px}.vsl input{flex:1;accent-color:var(--accent)}.vsl span{width:44px;text-align:right;font-variant-numeric:tabular-nums}
 .kofi{display:block;text-align:center;margin:12px auto 0;padding:10px 16px;border-radius:12px;background:#ff5e5b;color:#fff;font-weight:700;text-decoration:none;max-width:260px}
 .kofi.hidden{display:none}
 #modp label{display:inline-flex;align-items:center;gap:4px;margin-right:10px;cursor:pointer}
@@ -367,7 +371,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
       <button data-v="public"><span data-i18n="public"></span><small data-i18n="publicSub"></small></button>
     </div>
     <div style="margin-top:16px"><button class="btn" id="createBtn" data-i18n="create"></button></div>
-    <div class="homebtns"><button class="btn violet" id="soloBtn" data-i18n="solo"></button><button class="btn sec" id="tutoBtn" data-i18n="tutorial"></button><button class="btn sec" id="profBtn" data-i18n="profile"></button></div>
+    <div class="homebtns"><button class="btn violet" id="soloBtn" data-i18n="solo"></button><button class="btn sec" id="tutoBtn" data-i18n="tutorial"></button><button class="btn sec" id="profBtn" data-i18n="profile"></button><button class="btn sec" id="volHome" title="Son">🔊</button></div>
     <a class="kofi hidden" id="kofiBtn" target="_blank" rel="noopener"></a>
     <div class="or" data-i18n="orJoin"></div>
     <div class="row">
@@ -396,6 +400,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
     </div>
     <div class="hr">
       <div class="timer" id="timer"></div>
+      <button class="iconbtn" id="volBtn">🔊</button>
       <button class="iconbtn" id="modBtn">🛡️</button>
       <button class="iconbtn" id="obsBtn">OBS</button>
       <button class="iconbtn" id="streamBtn" title="">🎥</button>
@@ -877,6 +882,7 @@ const hideSp=()=>STREAM&&!PEEK&&!!S&&inGame()&&S.phase!=='end'&&!isSpec();
 function applyStream(){
   document.documentElement.classList.toggle('stream',STREAM);
   const ob=$('#obsBtn');if(ob){ob.classList.toggle('hidden',!S||isSpec()||!S.me.okey);ob.title=t('obsTip');}
+  const vb=$('#volBtn');if(vb)vb.title=LANG==='en'?'Sound settings':'Réglages du son';
   const mb=$('#modBtn');if(mb){mb.classList.toggle('hidden',!S||isSpec());mb.title=t('modTitle');}
   const b=$('#streamBtn');if(b){b.classList.toggle('on',CTRL);b.title=CTRL?SX('tipCtrl'):SX('tip');b.classList.toggle('hidden',!CTRL&&(!S||isSpec()));}
   const pk=$('#peekBtn');
@@ -1012,6 +1018,47 @@ $('#obsBtn').onclick=()=>{
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast(t('obsCopied')),()=>prompt(t('obsCopied'),url));
 };
 fetch('/config').then(r=>r.json()).then(c=>{if(c&&c.kofi){const a=$('#kofiBtn');a.href=c.kofi;a.textContent=t('kofi');a.classList.remove('hidden');}}).catch(()=>{});
+/* ---------- réglages du son : musique, effets, narrateur, vocal ---------- */
+function setVol(k,v){
+  VOL[k]=v;LS.set('mt_vol',VOL);
+  const c=SND.ctx;
+  if(k==='fx'&&SND.master&&c)SND.master.gain.setTargetAtTime(.9*volF('fx'),c.currentTime,.05);
+  if(k==='music'&&SND.mus&&c){SND.mus.g.gain.cancelScheduledValues(c.currentTime);SND.mus.g.gain.setTargetAtTime(.03*volF('music'),c.currentTime,.1);}
+  if(k==='voice')Object.values(V.pcs).forEach(o=>{if(o.audio)o.audio.volume=Math.min(1,volF('voice'))});
+}
+function closeVol(){const el=$('#volp');if(el)el.remove();}
+function openVol(){
+  closeVol();
+  const EN=LANG==='en';
+  const rows=[
+    ['music','🎵',EN?'Music':'Musique',SND.music,'mus'],
+    ['fx','💥',EN?'Sound effects':'Effets sonores',SND.fx,'fx'],
+    ['narr','🗣️',EN?'Narrator':'Narrateur',NARR,'narr'],
+    ['voice','🎙️',EN?'Voice chat (other players)':'Vocal (les autres joueurs)',true,null]];
+  const el=document.createElement('div');el.id='volp';
+  el.innerHTML=`<div class="ov" style="z-index:60"><div class="modal" style="text-align:left;max-width:460px">
+    <h2 style="margin:0 0 14px">🔊 ${EN?'Sound settings':'Réglages du son'}</h2>
+    ${rows.map(([k,ic,lb,on,tg])=>`<div class="vrow">
+      <div class="vlab">${ic} ${lb}${tg?`<label class="vsw"><input type="checkbox" data-tg="${tg}" ${on?'checked':''}> ${EN?'on':'activé'}</label>`:''}</div>
+      <div class="vsl"><input type="range" min="0" max="100" step="1" value="${VOL[k]}" data-v="${k}"><span id="vv_${k}">${VOL[k]}%</span></div></div>`).join('')}
+    <p style="opacity:.65;font-size:.9em;margin:10px 0 0">${EN?'Saved in this browser. Your own microphone is set in ⚙️ Audio (voice bar).':'Enregistré dans ce navigateur. Ton micro se règle dans ⚙️ Audio (barre vocale).'}</p>
+    <div style="text-align:center;margin-top:16px"><button class="btn primary" id="volClose">${EN?'Close':'Fermer'}</button></div></div></div>`;
+  document.body.appendChild(el);
+  el.querySelectorAll('[data-v]').forEach(i=>{
+    i.oninput=()=>{setVol(i.dataset.v,+i.value);$('#vv_'+i.dataset.v).textContent=i.value+'%';};
+    i.onchange=()=>{const k=i.dataset.v;if(k==='fx'&&SND.fx)FX.click();if(k==='narr'&&NARR){speechSynthesis.cancel();narrate(t('narrOn'));}};
+  });
+  el.querySelectorAll('[data-tg]').forEach(i=>i.onchange=()=>{
+    const k=i.dataset.tg,on=i.checked;
+    if(k==='mus'){SND.music=on;LS.set('mt_music',on);on?startMusic():stopMusic();}
+    if(k==='fx'){SND.fx=on;LS.set('mt_fx',on);if(on)FX.click();}
+    if(k==='narr'){NARR=on;LS.set('dr_narr',on);if(!on&&'speechSynthesis' in window)speechSynthesis.cancel();else narrate(t('narrOn'));}
+    if(S)renderVoiceBar();
+  });
+  $('#volClose').onclick=closeVol;
+  el.querySelector('.ov').onclick=e=>{if(e.target.classList.contains('ov'))closeVol()};
+}
+$('#volBtn').onclick=openVol;$('#volHome').onclick=openVol;
 function render(){
   document.body.className=(isNight()||S.phase==='intro'||S.phase==='lobby')?'night':'day';
   $('#badge').textContent=t('ph_'+S.phase);
@@ -1348,7 +1395,7 @@ function narrate(text,quiet){
   const clean=String(text).replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu,'').trim();
   if(!clean)return;
   const u=new SpeechSynthesisUtterance(clean);
-  u.lang=LANG==='fr'?'fr-FR':'en-US';u.rate=1.05;u.volume=quiet?.7:1;
+  u.lang=LANG==='fr'?'fr-FR':'en-US';u.rate=1.05;u.volume=Math.min(1,(quiet?.7:1)*volF('narr'));
   const v=speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith(LANG));if(v)u.voice=v;
   speechSynthesis.speak(u);
 }
@@ -1390,13 +1437,15 @@ function renderVoiceBar(){
    SONS (synthétisés, aucun fichier), MUSIQUE et ANIMATIONS
    ========================================================= */
 const ANIM={};
+const VOL=Object.assign({music:70,fx:70,narr:100,voice:100},LS.get('mt_vol',{}));
+const volF=k=>Math.max(0,Math.min(100,+VOL[k]||0))/(k==='music'||k==='fx'?70:100);
 const SND={ctx:null,master:null,fx:LS.get('mt_fx',true),music:LS.get('mt_music',true),mus:null,mood:'night'};
 function actx(){
   if(!SND.ctx){try{SND.ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}
   if(SND.ctx.state==='suspended')SND.ctx.resume().catch(()=>{});
   return SND.ctx;
 }
-function outNode(){const c=actx();if(!c)return null;if(!SND.master){SND.master=c.createGain();SND.master.gain.value=.9;SND.master.connect(c.destination);}return SND.master;}
+function outNode(){const c=actx();if(!c)return null;if(!SND.master){SND.master=c.createGain();SND.master.gain.value=.9*volF('fx');SND.master.connect(c.destination);}return SND.master;}
 document.addEventListener('pointerdown',()=>{if(actx()&&SND.music&&!SND.mus&&ROOM)startMusic();});
 function tone(o){
   if(!SND.fx)return;const c=actx(),m=outNode();if(!c||!m)return;
@@ -1444,7 +1493,7 @@ function startMusic(){
   const pulse=c.createOscillator(),pg=c.createGain();pulse.frequency.value=.25;pg.gain.value=.012;pulse.connect(pg);pg.connect(g.gain);pulse.start();
   SND.mus={g,f,oscs,sub,lfo,pulse};
   setMood(SND.mood,true);
-  g.gain.linearRampToValueAtTime(.03,c.currentTime+3);
+  g.gain.linearRampToValueAtTime(.03*volF('music'),c.currentTime+3);
 }
 function stopMusic(){
   const m=SND.mus;if(!m)return;SND.mus=null;
@@ -1665,7 +1714,7 @@ function applyTrack(id){
   const o=V.pcs[id];if(!o||!S)return;
   const want=(V.track&&!V.muted&&S.voice.to.includes(id))?V.track:null;
   if(o.sender&&o.cur!==want){o.cur=want;o.sender.replaceTrack(want).catch(()=>{});}
-  if(o.audio)o.audio.muted=!S.voice.from.includes(id)||MUTEV.has(id);
+  if(o.audio){o.audio.muted=!S.voice.from.includes(id)||MUTEV.has(id);o.audio.volume=Math.min(1,volF('voice'));}
 }
 function createPC(id,initiator){
   const pc=new RTCPeerConnection(ICE);
