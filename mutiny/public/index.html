@@ -226,6 +226,8 @@ html.overlay .scrchat .m.sys,html.overlay .scrchat .m.big{color:#cfe0ff!importan
 html.overlay .scrchat .m.death{color:#ffc2cc!important;border-color:rgba(255,59,92,.6)}
 html.overlay .scrchat .m.last{border-left:4px solid var(--gold)}
 html.overlay .scrchat .m .w{font-weight:800}
+.vmrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.vmrow:empty{display:none}.vmrow .btn{width:auto;padding:6px 12px;margin:0}
+.vmb{background:#b388ff22;border:1px solid #b388ff88;color:#e0d0ff;border-radius:999px;padding:4px 10px;font-weight:700;font-size:13px}
 .vsel{width:100%;background:#0b1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:600 14px Rajdhani,sans-serif}
 .vmeter{height:10px;background:#0b1224;border:1px solid var(--line);border-radius:6px;margin-top:8px;overflow:hidden}
 #vtBar{height:100%;width:0;background:#556;transition:width .06s}
@@ -1159,7 +1161,16 @@ async function fillDevices(){
   const EN=LANG==='en',def=EN?'System default':'Par défaut du système';
   const opt=(list,cur)=>`<option value="">${def}</option>`+list.filter(d=>d.deviceId&&d.deviceId!=='default'&&d.deviceId!=='communications').map((d,i)=>`<option value="${esc(d.deviceId)}" ${d.deviceId===cur?'selected':''}>${esc(d.label||('#'+(i+1)))}</option>`).join('');
   const mi=$('#vtMic'),ou=$('#vtOut');
-  if(mi)mi.innerHTML=opt(devs.filter(d=>d.kind==='audioinput'),AUD.mic);
+  const ins=devs.filter(d=>d.kind==='audioinput');
+  if(mi)mi.innerHTML=opt(ins,AUD.mic);
+  const vm=ins.find(d=>isVoicemod(d.label)),box=$('#vtVm');
+  if(box){
+    if(vm){const on=AUD.mic===vm.deviceId;
+      box.innerHTML=`<span class="vmb">🎭 Voicemod ${EN?'detected':'détecté'}</span>${on?`<span class="vstate">${EN?'in use':'utilisé'} ✅</span>`:`<button class="btn sec" id="vtUseVm">${EN?'Use Voicemod':'Utiliser Voicemod'}</button>`}`;
+      const u=$('#vtUseVm');if(u)u.onclick=()=>{$('#vtMic').value=vm.deviceId;$('#vtMic').onchange({target:$('#vtMic')});};
+    }else box.innerHTML=ins.some(d=>d.label)?'':`<span class="vstate">${EN?'Using Voicemod? Click “Test my mic” first so the browser shows your devices by name.':'Tu utilises Voicemod ? Clique d’abord sur « Tester mon micro » pour que le navigateur affiche tes micros par leur nom.'}</span>`;
+  }
+  const rw=$('#vtRaw');if(rw)rw.checked=rawMode();
   if(ou)ou.innerHTML=opt(devs.filter(d=>d.kind==='audiooutput'),AUD.out);
   return devs.some(d=>d.kind==='audioinput'&&d.label);
 }
@@ -1199,6 +1210,8 @@ function openVol(){
     <div class="vrow">
       <div class="vlab">🎙️ ${EN?'Microphone':'Micro'}</div>
       <select id="vtMic" class="vsel"></select>
+      <div id="vtVm" class="vmrow"></div>
+      <label class="vsw" style="margin-top:6px"><input type="checkbox" id="vtRaw"> ${EN?'Raw voice: turn off browser noise and echo filters (needed for Voicemod and voice changers)':'Voix brute : couper les filtres de bruit et d’écho du navigateur (indispensable pour Voicemod et les changeurs de voix)'}</label>
       <div class="vmeter"><div id="vtBar"></div></div>
       <div id="vtState" class="vstate">${EN?'Click “Test my mic”: your browser will ask for permission.':'Clique sur « Tester mon micro » : le navigateur va demander l’autorisation.'}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
@@ -1222,7 +1235,13 @@ function openVol(){
   $('#vtStart').onclick=startMicTest;
   $('#vtLoop').onchange=applyLoop;
   $('#vtBeep').onclick=testSound;
-  $('#vtMic').onchange=async e=>{if(V.on)await setMic(e.target.value);else{AUD.mic=e.target.value;LS.set('mt_mic',AUD.mic);}if(MT.stream||V.on)startMicTest();};
+  $('#vtMic').onchange=async e=>{
+    const sel=e.target,lab=sel.selectedIndex>0?sel.options[sel.selectedIndex].text:'';
+    AUD.label=lab;LS.set('mt_mic_label',lab);AUD.raw=null;LS.set('mt_raw',null);   // voix brute auto selon le micro
+    if(V.on)await setMic(sel.value);else{AUD.mic=sel.value;LS.set('mt_mic',AUD.mic);}
+    await fillDevices();if(MT.stream||V.on)startMicTest();
+  };
+  $('#vtRaw').onchange=async e=>{AUD.raw=e.target.checked;LS.set('mt_raw',AUD.raw);if(V.on)await setMic(AUD.mic);if(MT.stream||V.on)startMicTest();};
   const vo=$('#vtOut');if(vo)vo.onchange=e=>{setOut(e.target.value);if(MT.el)applySink(MT.el);testSound();};
   if(V.on&&V.stream)startMicTest();
   el.querySelectorAll('[data-v]').forEach(i=>{
@@ -1984,7 +2003,11 @@ socket.on('rtc',async({from,data})=>{
   }catch(e){console.warn('rtc',e)}
 });
 /* ---------- réglages audio : micro, sortie, test, état des connexions ---------- */
-const AUD={mic:LS.get('mt_mic',''),out:LS.get('mt_out','')};
+const AUD={mic:LS.get('mt_mic',''),out:LS.get('mt_out',''),label:LS.get('mt_mic_label',''),raw:LS.get('mt_raw',null)};
+/* changeurs de voix (Voicemod, Clownfish, VB-Cable…) : micros virtuels à ne pas « nettoyer » par le navigateur */
+const VCHG=/voicemod|voice ?changer|clownfish|morphvox|voicemeeter|vb-?audio|cable output|nvidia broadcast|krisp/i;
+const isVoicemod=l=>/voicemod/i.test(l||'');
+const rawMode=()=>AUD.raw===null?VCHG.test(AUD.label||''):!!AUD.raw;
 const EN=()=>LANG==='en';
 /* micro : essaie le micro choisi, sinon celui par défaut (les identifiants d'appareils changent parfois) */
 async function getMic(){
@@ -1994,6 +2017,9 @@ async function getMic(){
   catch(e){
     // micro choisi introuvable (débranché, identifiant changé) : on prend celui par défaut, sans oublier le choix
     if(AUD.mic&&e&&(e.name==='OverconstrainedError'||e.name==='NotFoundError')){
+      let same=null;
+      if(AUD.label){try{same=(await navigator.mediaDevices.enumerateDevices()).find(d=>d.kind==='audioinput'&&d.label===AUD.label);}catch(_){}}
+      if(same){AUD.mic=same.deviceId;LS.set('mt_mic',AUD.mic);st=await navigator.mediaDevices.getUserMedia({audio:micConstraints(true)});return st;}
       st=await navigator.mediaDevices.getUserMedia({audio:micConstraints(false)});
       toast(LANG==='en'?'🎙️ The chosen microphone is not available: using the default one.':'🎙️ Le micro choisi n’est pas disponible : micro par défaut utilisé.');
     }else throw e;
@@ -2011,7 +2037,7 @@ function micError(e){
     :t('micUnavailable');
   toast(msg);reportErr('micro: '+(n||e),'voice');
 }
-function micConstraints(useChoice){const c={echoCancellation:true,noiseSuppression:true,autoGainControl:true};if(useChoice!==false&&AUD.mic)c.deviceId={exact:AUD.mic};return c;}
+function micConstraints(useChoice){const r=useChoice!==false&&rawMode();const c={echoCancellation:!r,noiseSuppression:!r,autoGainControl:!r,channelCount:1};if(useChoice!==false&&AUD.mic)c.deviceId={exact:AUD.mic};return c;}
 const canSink=typeof HTMLMediaElement!=='undefined'&&'setSinkId' in HTMLMediaElement.prototype;
 function applySink(el){if(canSink&&el&&AUD.out)el.setSinkId(AUD.out).catch(()=>{});}
 async function setMic(id){
