@@ -286,6 +286,9 @@ body.night .scr-ph{color:#ff3b5c}body.day .scr-ph{color:#ffc94d}
 .log::-webkit-scrollbar{width:6px}.log::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 .m{word-wrap:break-word}
 .m .w{font-weight:700;margin-right:6px}
+.m .w.who{cursor:pointer;border-radius:4px}.m .w.who:hover{text-decoration:underline;background:rgba(255,255,255,.08)}
+.m .at{color:var(--accent);font-weight:700}
+.m.ment{background:rgba(57,230,255,.1);border-left:3px solid var(--accent);border-radius:6px}
 .m.sys{color:var(--muted);font-style:italic;text-align:center;font-size:14.5px;padding:2px 0}
 .m.big{color:var(--text);font-style:normal;font-family:Orbitron;font-size:13px;letter-spacing:.08em;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;text-align:center}
 .m.death{color:#ffb3c0;background:rgba(255,59,92,.1);border-radius:8px;padding:6px 8px;text-align:center}
@@ -1488,7 +1491,8 @@ function msgEl(m){
   if(m.from){
     const tag=m.k==='team'?t('tagTeam'):m.k==='dead'?t('tagDead'):m.k==='spec'?t('tagSpec'):m.k==='last'?'💬 '+t('lastTag'):'';
     d.className='m '+(m.k==='chat'?'':m.k);
-    d.innerHTML=`${tag?`<span class="chan">${tag}</span>`:''}${m.bot?`<span class="bt">${t('botTag')}</span>`:''}<span class="w" style="color:${esc(m.color)}">${esc(m.name)}</span>${esc(tr(m.text))}`;
+    d.innerHTML=`${tag?`<span class="chan">${tag}</span>`:''}${m.bot?`<span class="bt">${t('botTag')}</span>`:''}<span class="w${m.from&&m.from!==ME&&!SCR?' who':''}" data-name="${esc(m.name)}" style="color:${esc(m.color)}" ${m.from&&m.from!==ME&&!SCR?`title="${esc(LANG==='en'?'Click to reply':'Clique pour répondre')}"`:''}>${esc(m.name)}</span>${hlMention(esc(tr(m.text)))}`;
+    if(S&&m.from!==ME&&mentionsMe(tr(m.text)))d.classList.add('ment');
     if(STREAM&&m.k==='team')spoilMsg(d);
   }else{
     d.className='m '+(m.k==='big'?'sys big':m.k==='death'?'sys death':m.k==='priv'?'priv':m.k==='vote'?'vote':m.k==='team'?'team':'sys');
@@ -1505,6 +1509,18 @@ function addMsg(m,live){
   if(live&&m.say)narrate(tr(m.text));
   if(live&&m.k==='priv'&&!STREAM)narrate(tr(m.text),true);
 }
+/* @mentions : clic sur un pseudo du chat → « @pseudo » en tête du message */
+const myName=()=>S&&(S.players.find(p=>p.id===ME)||{}).name||'';
+const reEsc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function mentionsMe(txt){const n=myName();return !!n&&new RegExp('@'+reEsc(n)+'(?![\\p{L}\\d])','iu').test(txt||'');}
+function hlMention(html){return html.replace(/@([\p{L}\d_\-.]{1,20})/gu,'<b class="at">@$1</b>');}
+$('#log').addEventListener('click',e=>{
+  const w=e.target.closest('.w.who');if(!w)return;
+  const inp=$('#chatinput');if(!inp||inp.disabled)return;
+  const tag='@'+w.dataset.name+' ';
+  inp.value=tag+inp.value.replace(/^@\S+\s*/,'');
+  inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
+});
 function rebuildLog(){const l=$('#log');l.innerHTML='';LOG.forEach(m=>l.appendChild(msgEl(m)));l.scrollTop=l.scrollHeight;}
 
 /* minuteur */
