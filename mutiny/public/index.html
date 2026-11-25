@@ -240,6 +240,7 @@ html.overlay .scrchat .m .w{font-weight:800}
 #foot{position:fixed;left:10px;bottom:8px;z-index:30;display:flex;align-items:center;gap:8px;font:500 11px Rajdhani,sans-serif;color:#ffffff55;pointer-events:none}
 #foot>*{pointer-events:auto}
 #foot{right:10px}
+#foot .bld{opacity:.45;font-size:10px;letter-spacing:.03em;font-variant-numeric:tabular-nums}
 #foot a#legalBtn{color:#ffffff66;text-decoration:none}#foot a#legalBtn:hover{color:#fff;text-decoration:underline}
 #foot .kofi{position:fixed;right:10px;bottom:8px}
 #foot.hidden,#foot.hidden .kofi{display:none}
@@ -533,7 +534,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 </section>
 <div id="ovl"></div>
 <button class="iconbtn" id="setHome">⚙️ <span data-i18n="bSet"></span></button>
-<div id="foot"><span>Copyright © LTV 2026</span><span>·</span><a href="#" id="legalBtn" data-i18n="legal"></a><a class="kofi hidden" id="kofiBtn" target="_blank" rel="noopener"></a></div>
+<div id="foot"><span>Copyright © LTV 2026</span><span>·</span><a href="#" id="legalBtn" data-i18n="legal"></a><span id="buildTag" class="bld"></span><a class="kofi hidden" id="kofiBtn" target="_blank" rel="noopener"></a></div>
 <button id="peekBtn" class="hidden"></button>
 <div id="flash"></div>
 <div id="audiobox"></div>
@@ -1147,7 +1148,7 @@ function openLegal(e){
   const close=()=>el.remove();$('#legalClose').onclick=close;el.querySelector('.ov').onclick=ev=>{if(ev.target.classList.contains('ov'))close()};
 }
 $('#legalBtn').onclick=openLegal;
-fetch('/config').then(r=>r.json()).then(c=>{CFG=c||{};if(c&&c.kofi){const a=$('#kofiBtn');a.href=c.kofi;a.textContent=t('kofi');a.classList.remove('hidden');}}).catch(()=>{});
+fetch('/config').then(r=>r.json()).then(c=>{CFG=c||{};if(c&&c.build){const b=c.build;$('#buildTag').textContent=`· build v${b.version}${b.commit?'-'+b.commit:''} · ${b.date}`;$('#buildTag').title=b.commit?'commit '+b.commit:'';}if(c&&c.kofi){const a=$('#kofiBtn');a.href=c.kofi;a.textContent=t('kofi');a.classList.remove('hidden');}}).catch(()=>{});
 /* ---------- réglages du son : musique, effets, narrateur, vocal ---------- */
 function setVol(k,v){
   VOL[k]=v;LS.set('mt_vol',VOL);
