@@ -43,7 +43,15 @@ function sendIndex(req, res) {
 app.get(['/', '/index.html'], sendIndex);
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.get('/health', (_q, r) => r.send('ok'));
+/* numéro de build : version du jeu + commit GitHub déployé par Render + date de démarrage */
+const VERSION = '1.9';
+const BUILD = {
+  version: VERSION,
+  commit: (process.env.RENDER_GIT_COMMIT || '').slice(0, 7) || null,
+  date: new Date().toISOString().slice(0, 10)
+};
 app.get('/config', (_q, r) => r.json({
+  build: BUILD,
   kofi: /^https:\/\/(www\.)?ko-fi\.com\/[\w-]+\/?$/.test(process.env.KOFI_URL || '') ? process.env.KOFI_URL : null,
   /* mentions légales (facultatif) : LEGAL_NAME, LEGAL_SIRET, LEGAL_ADDRESS, LEGAL_CONTACT */
   legalName: (process.env.LEGAL_NAME || '').slice(0, 120) || null,
